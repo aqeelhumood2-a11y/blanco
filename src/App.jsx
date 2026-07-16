@@ -7,7 +7,7 @@ import {
   getDoc,
 } from 'firebase/firestore'
 import './App.css'
-import backgroundImage from './assets/background.jpeg'
+
 import Admin from './Admin.jsx'
 import { db } from './firebase.js'
 import { menuSections } from './menuData.js'
