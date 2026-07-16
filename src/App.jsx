@@ -201,6 +201,7 @@ function App() {
   const [menuError, setMenuError] = useState('')
   const [siteSettings, setSiteSettings] = useState(DEFAULT_SITE_SETTINGS)
   const [themeSettings, setThemeSettings] = useState(DEFAULT_THEME_SETTINGS)
+  const [themeLoading, setThemeLoading] = useState(true)
   const [contactSettings, setContactSettings] = useState(
     DEFAULT_CONTACT_SETTINGS,
   )
@@ -256,6 +257,7 @@ function App() {
     }
 
     async function loadThemeSettings() {
+      setThemeLoading(true)
       try {
         const themeSnapshot = await getDoc(doc(db, 'themeSettings', 'main'))
 
@@ -305,6 +307,8 @@ heroBackgroundColor:
         }
       } catch (themeError) {
         console.error(themeError)
+      } finally {
+        setThemeLoading(false)
       }
     }
 
@@ -463,7 +467,9 @@ const heroStyle = {
     '--hero-background': themeSettings.heroBackgroundColor,
     backgroundColor: themeSettings.pageBackgroundColor,
   }
-
+if (themeLoading) {
+  return null
+}
   return (
     <main className="website" style={rootStyle}>
       <section
