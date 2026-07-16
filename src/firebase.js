@@ -3,14 +3,25 @@ import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getAuth } from 'firebase/auth'
 
+import { initializeApp } from 'firebase/app'
+import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
+import { getAuth } from 'firebase/auth'
+
 const firebaseConfig = {
-  apiKey: 'AIzaSyB2iSOjEDPnTbxsvl0SqJ86_x6z6GBKF40',
-  authDomain: 'ninety-six-menu.firebaseapp.com',
-  projectId: 'ninety-six-menu',
-  storageBucket: 'ninety-six-menu.firebasestorage.app',
-  messagingSenderId: '914420243340',
-  appId: '1:914420243340:web:ad89e4ab56ec2f67a714a9',
+  apiKey: "AIzaSyC07wUCcCPCFTcZkFV-3g9F-BDvfIAv_II",
+  authDomain: "blanco-menu.firebaseapp.com",
+  projectId: "blanco-menu",
+  storageBucket: "blanco-menu.firebasestorage.app",
+  messagingSenderId: "411043575202",
+  appId: "1:411043575202:web:27a8cb5255db0db3b6aefb"
 }
+
+const app = initializeApp(firebaseConfig)
+
+export const db = getFirestore(app)
+export const storage = getStorage(app)
+export const auth = getAuth(app)
 
 const app = initializeApp(firebaseConfig)
 

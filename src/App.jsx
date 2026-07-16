@@ -13,14 +13,14 @@ import { db } from './firebase.js'
 import { menuSections } from './menuData.js'
 
 const DEFAULT_SITE_SETTINGS = {
-  siteNameEn: 'NINETY SIX',
-  siteNameAr: 'ناينتي سيكس',
-  welcomeEn: "Welcome, we're glad you're here.",
-  welcomeAr: 'أهلًا بك، سعداء بوجودك.',
-  descriptionEn: 'Take a look at our menu and enjoy your favorite drink.',
-  descriptionAr: 'تصفح قائمتنا واستمتع بمشروبك المفضل.',
-  workingHours: '8:00 AM – 2:00 AM',
-  footerText: 'NINETY SIX DEGREES CAFE',
+  siteNameEn: 'RESTAURANT NAME',
+  siteNameAr: 'اسم المطعم',
+  welcomeEn: 'Welcome',
+  welcomeAr: 'أهلًا وسهلًا',
+  descriptionEn: 'Explore our menu.',
+  descriptionAr: 'تصفح قائمة الطعام.',
+  workingHours: '',
+  footerText: 'RESTAURANT NAME',
   currency: 'BD',
   showPrices: true,
 }
@@ -417,7 +417,7 @@ function App() {
     return <Admin />
   }
 
-  const firstSectionId = firebaseMenu[0]?.id || 'black'
+ const firstSectionId = firebaseMenu[0]?.id || ''
 
   const heroBackgroundUrl = getDirectImageUrl(themeSettings.heroBackgroundUrl)
   const resolvedHeroBackground = heroBackgroundUrl
