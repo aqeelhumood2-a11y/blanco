@@ -421,8 +421,8 @@ function App() {
 
   const heroBackgroundUrl = getDirectImageUrl(themeSettings.heroBackgroundUrl)
   const resolvedHeroBackground = heroBackgroundUrl
-    ? `url(${heroBackgroundUrl})`
-    : `url(${backgroundImage})`
+  ? `url(${heroBackgroundUrl})`
+  : 'none'
 
   const logoUrl = getDirectImageUrl(themeSettings.logoUrl)
   const showLogo = Boolean(logoUrl) && !logoFailed
