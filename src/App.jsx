@@ -270,6 +270,10 @@ function App() {
             pageBackgroundColor:
               data.pageBackgroundColor ??
               DEFAULT_THEME_SETTINGS.pageBackgroundColor,
+heroBackgroundColor:
+  data.heroBackgroundColor ??
+  DEFAULT_THEME_SETTINGS.heroBackgroundColor,
+
             primaryColor:
               data.primaryColor ?? DEFAULT_THEME_SETTINGS.primaryColor,
             buttonColor:
