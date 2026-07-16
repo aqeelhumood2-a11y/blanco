@@ -186,6 +186,10 @@ function Admin() {
   const [pageBackgroundColor, setPageBackgroundColor] = useState(
     defaultThemeSettings.pageBackgroundColor,
   )
+const [heroBackgroundColor, setHeroBackgroundColor] = useState(
+  '#28102f',
+)
+
   const [primaryColor, setPrimaryColor] = useState(
     defaultThemeSettings.primaryColor,
   )
@@ -869,6 +873,9 @@ function Admin() {
         data.pageBackgroundColor ??
           defaultThemeSettings.pageBackgroundColor,
       )
+     setHeroBackgroundColor(
+  data.heroBackgroundColor ?? '#28102f',
+) 
       setPrimaryColor(
         data.primaryColor ?? defaultThemeSettings.primaryColor,
       )
@@ -937,12 +944,14 @@ function Admin() {
           heroBackgroundUrl: finalHeroBackgroundUrl,
           logoUrl: finalLogoUrl,
           pageBackgroundColor,
-          primaryColor,
-          buttonColor,
+heroBackgroundColor,
+primaryColor,
+buttonColor,
           priceBackgroundColor,
           priceTextColor,
           headingColor,
           textColor,
+          
           mutedTextColor,
           navigationBackgroundColor,
           footerBackgroundColor,
@@ -1648,7 +1657,23 @@ function Admin() {
                   </div>
                 </label>
 
-                <label>
+            <label>
+                 
+                 <label>
+  لون خلفية الهيدر
+
+  <div className="adminColorInputRow">
+    <input
+      type="color"
+      value={heroBackgroundColor}
+      onChange={(event) =>
+        setHeroBackgroundColor(event.target.value)
+      }
+    />
+
+    <span>{heroBackgroundColor}</span>
+  </div>
+</label>
                   اللون الأساسي
 
                   <div className="adminColorInputRow">

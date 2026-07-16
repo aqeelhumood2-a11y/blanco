@@ -423,7 +423,10 @@ function App() {
   const resolvedHeroBackground = heroBackgroundUrl
   ? `url(${heroBackgroundUrl})`
   : 'none'
-
+const heroStyle = {
+  backgroundImage: resolvedHeroBackground,
+  backgroundColor: themeSettings.heroBackgroundColor || '#28102f',
+}
   const logoUrl = getDirectImageUrl(themeSettings.logoUrl)
   const showLogo = Boolean(logoUrl) && !logoFailed
 
@@ -453,6 +456,7 @@ function App() {
     '--english-font': themeSettings.englishFont,
     '--arabic-font': themeSettings.arabicFont,
     '--hero-overlay-opacity': themeSettings.heroOverlayOpacity,
+    '--hero-background': themeSettings.heroBackgroundColor,
     backgroundColor: themeSettings.pageBackgroundColor,
   }
 
@@ -460,7 +464,7 @@ function App() {
     <main className="website" style={rootStyle}>
       <section
         className="hero"
-        style={{ backgroundImage: resolvedHeroBackground }}
+        style={heroStyle}
       >
         <div
           className="heroShade"
