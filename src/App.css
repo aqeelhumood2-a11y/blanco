@@ -29,12 +29,7 @@
 .heroShade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-  rgb(22, 8, 30) 0%,
-    rgb(29, 8, 39) 50%,
-    rgb(17, 5, 23) 100%
-  );
+ background: transparent;
 }
 
 .heroContent {
