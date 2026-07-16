@@ -35,6 +35,7 @@ const defaultThemeSettings = {
   heroBackgroundUrl: '',
   logoUrl: '',
   pageBackgroundColor: '#f7f3f8',
+  heroBackgroundColor: '#28102f',
   primaryColor: '#582369',
   buttonColor: '#542065',
   priceBackgroundColor: '#582369',
