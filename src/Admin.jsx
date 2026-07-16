@@ -19,15 +19,15 @@ import { menuSections } from './menuData.js'
 import './Admin.css'
 
 const defaultSiteSettings = {
-  siteNameEn: 'NINETY SIX',
+  siteNameEn: 'BLANCO',
   siteNameAr: '',
   welcomeEn: "Welcome, we're glad you're here.",
   welcomeAr: 'أهلًا بك، سعداء بوجودك.',
   descriptionEn: 'Take a look at our menu and enjoy your favorite drink.',
   descriptionAr: 'تصفح قائمتنا واستمتع بمشروبك المفضل.',
   workingHours: '8:00 AM – 2:00 AM',
-  footerText: 'NINETY SIX DEGREES CAFE',
-  currency: 'BD',
+  footerText: 'BLANCO',
+  currency: '',
   showPrices: true,
 }
 
@@ -1172,7 +1172,8 @@ function Admin() {
           onSubmit={handleLogin}
         >
           <div className="adminBrand">
-            <span>NINETY SIX</span>
+            <span>BLANCO
+            </span>
             <small>ADMIN PANEL</small>
           </div>
 
@@ -1191,7 +1192,7 @@ function Admin() {
               onChange={(event) =>
                 setEmail(event.target.value)
               }
-              placeholder="admin@96cafe.com"
+              placeholder="admin@BLANCO.com"
               autoComplete="email"
               required
             />
@@ -1265,7 +1266,7 @@ function Admin() {
     <main className="adminDashboard" dir="rtl">
       <header className="adminTopBar">
         <div>
-          <strong>NINETY SIX</strong>
+          <strong>BLANCO</strong>
           <span>لوحة الإدارة</span>
         </div>
 
