@@ -1,18 +1,12 @@
 import { useCallback, useState } from 'react'
 import { deleteDoc, getDocs, setDoc } from 'firebase/firestore'
-import { db } from '../../firebase.js'
-import { runChunkedBatch } from '../utils/adminUtils.js'
+import { deleteBranchContent, duplicateBranchContent } from '../utils/branchDuplication.js'
 import {
   DEFAULT_BRANCH_ID,
   branchDocRef,
   branchesCollectionRef,
-  categoriesCollectionRef,
-  contactSettingsDocRef,
   defaultBranchMeta,
   normalizeBranch,
-  productsCollectionRef,
-  siteSettingsDocRef,
-  themeSettingsDocRef,
   validateBranchForm,
 } from '../utils/branchPaths.js'
 
@@ -53,7 +47,12 @@ export function useBranches() {
     }
   }, [])
 
-  async function createBranch(formValues) {
+  // cloneSourceBranchId: which branch's full menu/settings to duplicate into
+  // the new one ('main' or any other existing branch id). The clone runs
+  // right after the branch document is created; if it fails partway, the
+  // partially-written branch (metadata + any copied content) is rolled back
+  // so no half-created branch is ever left behind.
+  async function createBranch(formValues, cloneSourceBranchId) {
     const check = validateBranchForm(formValues, branches)
     if (!check.valid) throw new Error(check.message)
 
@@ -80,6 +79,17 @@ export function useBranches() {
     }
 
     await setDoc(branchDocRef(newId), data)
+
+    try {
+      await duplicateBranchContent(cloneSourceBranchId || DEFAULT_BRANCH_ID, newId)
+    } catch (err) {
+      console.error(err)
+      // Roll back the partially-cloned branch so nothing half-created is
+      // left behind — the admin sees a clean failure and can retry.
+      await deleteBranchContent(newId).catch((cleanupError) => console.error(cleanupError))
+      await deleteDoc(branchDocRef(newId)).catch((cleanupError) => console.error(cleanupError))
+      throw new Error('تعذر نسخ محتوى الفرع، تم التراجع عن إنشاء الفرع بالكامل')
+    }
 
     const created = normalizeBranch({ id: newId, ...data })
     setBranches((prev) => [...prev, created])
@@ -118,25 +128,7 @@ export function useBranches() {
       // Best-effort cleanup of the branch's own content so deleting it
       // doesn't leave orphaned categories/products/settings behind —
       // this never touches any other branch's data.
-      const categoriesSnap = await getDocs(categoriesCollectionRef(branch.id))
-
-      const operationBuilders = []
-      for (const categoryDoc of categoriesSnap.docs) {
-        // eslint-disable-next-line no-await-in-loop
-        const productsSnap = await getDocs(productsCollectionRef(branch.id, categoryDoc.id))
-        productsSnap.docs.forEach((productDoc) => {
-          operationBuilders.push((batch) => batch.delete(productDoc.ref))
-        })
-        operationBuilders.push((batch) => batch.delete(categoryDoc.ref))
-      }
-
-      if (operationBuilders.length > 0) {
-        await runChunkedBatch(db, operationBuilders)
-      }
-
-      await deleteDoc(siteSettingsDocRef(branch.id)).catch(() => {})
-      await deleteDoc(themeSettingsDocRef(branch.id)).catch(() => {})
-      await deleteDoc(contactSettingsDocRef(branch.id)).catch(() => {})
+      await deleteBranchContent(branch.id)
       await deleteDoc(branchDocRef(branch.id))
     } catch (err) {
       console.error(err)

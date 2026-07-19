@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useBranches } from './hooks/useBranches.js'
-import { branchStatusOptions, defaultSocialLinks } from './utils/branchPaths.js'
+import { DEFAULT_BRANCH_ID, branchStatusOptions, defaultSocialLinks } from './utils/branchPaths.js'
 
 const emptyForm = {
   nameEn: '',
@@ -22,6 +22,8 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
   const [form, setForm] = useState(emptyForm)
   const [successMessage, setSuccessMessage] = useState('')
   const [creating, setCreating] = useState(false)
+  const [cloneMode, setCloneMode] = useState('default')
+  const [cloneSourceId, setCloneSourceId] = useState('')
 
   const creatingLock = useRef(false)
 
@@ -39,6 +41,8 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
 
   function openNewBranchForm() {
     setForm(emptyForm)
+    setCloneMode('default')
+    setCloneSourceId('')
     setError('')
     setSuccessMessage('')
     setShowForm(true)
@@ -53,9 +57,22 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
     setError('')
     setSuccessMessage('')
 
+    const sourceId = cloneMode === 'other' ? cloneSourceId : DEFAULT_BRANCH_ID
+
+    if (cloneMode === 'other' && !sourceId) {
+      setError('اختر الفرع الذي تريد النسخ منه')
+      creatingLock.current = false
+      setCreating(false)
+      return
+    }
+
+    const sourceBranch = branches.find((branch) => branch.id === sourceId)
+
     try {
-      await createBranch(form)
-      setSuccessMessage('تم إنشاء الفرع بنجاح. منتجاته وإعداداته فارغة الآن — سيتم إضافة نسخ المنيو تلقائيًا من الفرع الرئيسي في تحديث قادم.')
+      await createBranch(form, sourceId)
+      setSuccessMessage(
+        `تم إنشاء الفرع بنجاح، مع نسخ كامل المنيو والإعدادات من "${sourceBranch?.nameAr || sourceBranch?.nameEn || 'الفرع الرئيسي'}". الفرع الجديد مستقل تمامًا — أي تعديل عليه لن يؤثر على الفرع المصدر.`,
+      )
       setForm(emptyForm)
       setShowForm(false)
     } catch (err) {
@@ -104,6 +121,53 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
       {showForm && (
         <form className="adminBranchForm" onSubmit={handleCreateBranch}>
           <h3>فرع جديد</h3>
+
+          <div className="adminBranchCloneSection">
+            <p className="adminBranchCloneTitle">نسخ المنيو والإعدادات من:</p>
+
+            <label className="adminBranchCloneOption">
+              <input
+                type="radio"
+                name="cloneMode"
+                checked={cloneMode === 'default'}
+                onChange={() => {
+                  setCloneMode('default')
+                  setCloneSourceId('')
+                }}
+              />
+              الفرع الرئيسي (Default Branch)
+            </label>
+
+            <label className="adminBranchCloneOption">
+              <input
+                type="radio"
+                name="cloneMode"
+                checked={cloneMode === 'other'}
+                onChange={() => setCloneMode('other')}
+              />
+              فرع آخر موجود بالفعل
+            </label>
+
+            {cloneMode === 'other' && (
+              <select
+                value={cloneSourceId}
+                onChange={(e) => setCloneSourceId(e.target.value)}
+                required
+              >
+                <option value="">اختر الفرع...</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.nameAr || branch.nameEn}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <p className="adminBranchCloneHint">
+              سيتم نسخ الأقسام والمنتجات (بأسعارها وصورها وترتيبها وظهورها) والمظهر والشعار وصورة الهيدر
+              وساعات العمل وبيانات التواصل نسخًا كاملاً ومستقلاً — تعديل الفرع الجديد لن يغيّر شيئًا في الفرع المصدر.
+            </p>
+          </div>
 
           <div className="adminBranchFormGrid">
             <label>
