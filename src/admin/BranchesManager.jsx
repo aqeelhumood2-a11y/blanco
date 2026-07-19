@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useBranches } from './hooks/useBranches.js'
+import { useBranchSync } from './hooks/useBranchSync.js'
 import { DEFAULT_BRANCH_ID, branchStatusOptions, defaultSocialLinks } from './utils/branchPaths.js'
+import { syncAspectOptions } from './utils/branchSync.js'
+import { generateBranchQrDataUrl, getBranchMenuUrl } from './utils/branchQr.js'
 
 const emptyForm = {
   nameEn: '',
@@ -17,6 +20,7 @@ const emptyForm = {
 function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
   const { branches, loadingBranches, error, setError, loadBranches, createBranch, setBranchStatus, deleteBranch } =
     useBranches()
+  const { syncing, syncMessage, syncError, setSyncMessage, setSyncError, runSync } = useBranchSync()
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -25,11 +29,99 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
   const [cloneMode, setCloneMode] = useState('default')
   const [cloneSourceId, setCloneSourceId] = useState('')
 
+  const [qrOpenFor, setQrOpenFor] = useState(null)
+  const [qrDataUrls, setQrDataUrls] = useState({})
+  const [copiedFor, setCopiedFor] = useState(null)
+
+  const [showSyncPanel, setShowSyncPanel] = useState(false)
+  const [syncSourceId, setSyncSourceId] = useState(currentBranchId)
+  const [syncAspects, setSyncAspects] = useState([])
+  const [syncTargetIds, setSyncTargetIds] = useState([])
+
   const creatingLock = useRef(false)
+  const syncingLock = useRef(false)
 
   useEffect(() => {
     loadBranches()
   }, [loadBranches])
+
+  useEffect(() => {
+    setSyncSourceId(currentBranchId)
+  }, [currentBranchId])
+
+  async function toggleQrPanel(branch) {
+    if (qrOpenFor === branch.id) {
+      setQrOpenFor(null)
+      return
+    }
+
+    setQrOpenFor(branch.id)
+
+    if (!qrDataUrls[branch.id]) {
+      try {
+        const dataUrl = await generateBranchQrDataUrl(branch.code)
+        setQrDataUrls((prev) => ({ ...prev, [branch.id]: dataUrl }))
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  async function copyBranchUrl(branch) {
+    const url = getBranchMenuUrl(branch.code)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedFor(branch.id)
+      setTimeout(() => setCopiedFor((prev) => (prev === branch.id ? null : prev)), 2000)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  function downloadBranchQr(branch) {
+    const dataUrl = qrDataUrls[branch.id]
+    if (!dataUrl) return
+
+    const link = document.createElement('a')
+    link.href = dataUrl
+    link.download = `blanco-menu-${branch.code}-qr.png`
+    link.click()
+  }
+
+  function toggleSyncAspect(value) {
+    setSyncAspects((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]))
+  }
+
+  function toggleSyncTarget(id) {
+    setSyncTargetIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+  }
+
+  function selectAllSyncTargets() {
+    setSyncTargetIds(branches.filter((b) => b.id !== syncSourceId).map((b) => b.id))
+  }
+
+  async function handleRunSync() {
+    if (syncingLock.current) return
+
+    const targetNames = branches
+      .filter((b) => syncTargetIds.includes(b.id))
+      .map((b) => b.nameAr || b.nameEn)
+      .join('، ')
+
+    const confirmed = window.confirm(
+      `سيتم استبدال العناصر المحددة في الفروع التالية ببيانات الفرع المصدر: ${targetNames}. هل تريد المتابعة؟`,
+    )
+    if (!confirmed) return
+
+    syncingLock.current = true
+    try {
+      await runSync({ sourceBranchId: syncSourceId, targetBranchIds: syncTargetIds, aspects: syncAspects })
+    } catch {
+      // error message already surfaced via syncError
+    } finally {
+      syncingLock.current = false
+    }
+  }
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -109,6 +201,17 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
             + إضافة فرع جديد
           </button>
 
+          <button
+            type="button"
+            onClick={() => {
+              setShowSyncPanel((prev) => !prev)
+              setSyncMessage('')
+              setSyncError('')
+            }}
+          >
+            أدوات المزامنة
+          </button>
+
           <button type="button" onClick={onBack}>
             الرجوع للوحة الرئيسية
           </button>
@@ -117,6 +220,68 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
 
       {error && <div className="adminDashboardError">{error}</div>}
       {successMessage && <p className="uploadSuccess">{successMessage}</p>}
+
+      {showSyncPanel && (
+        <div className="adminBranchSyncPanel">
+          <h3>مزامنة بين الفروع</h3>
+          <p className="adminBranchCloneHint">
+            اختر العناصر التي تريد نسخها من فرع المصدر إلى فرع أو أكثر — يتم استبدال هذه العناصر فقط في الفروع
+            الهدف، وكل شيء آخر يبقى كما هو.
+          </p>
+
+          {syncError && <div className="adminDashboardError">{syncError}</div>}
+          {syncMessage && <p className="uploadSuccess">{syncMessage}</p>}
+
+          <label className="adminSyncSourceLabel">
+            فرع المصدر
+            <select value={syncSourceId} onChange={(e) => setSyncSourceId(e.target.value)}>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.nameAr || branch.nameEn}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="adminSyncAspectsGrid">
+            {syncAspectOptions.map((option) => (
+              <label key={option.value} className="adminSyncAspectOption">
+                <input
+                  type="checkbox"
+                  checked={syncAspects.includes(option.value)}
+                  onChange={() => toggleSyncAspect(option.value)}
+                />
+                {option.labelAr}
+              </label>
+            ))}
+          </div>
+
+          <p className="adminBranchCloneTitle">مزامنة إلى:</p>
+          <div className="adminSyncTargetsGrid">
+            {branches
+              .filter((branch) => branch.id !== syncSourceId)
+              .map((branch) => (
+                <label key={branch.id} className="adminSyncAspectOption">
+                  <input
+                    type="checkbox"
+                    checked={syncTargetIds.includes(branch.id)}
+                    onChange={() => toggleSyncTarget(branch.id)}
+                  />
+                  {branch.nameAr || branch.nameEn}
+                </label>
+              ))}
+          </div>
+
+          <div className="adminProductsHeaderButtons">
+            <button type="button" onClick={selectAllSyncTargets}>
+              تحديد كل الفروع
+            </button>
+            <button type="button" onClick={handleRunSync} disabled={syncing}>
+              {syncing ? 'جاري المزامنة...' : 'تنفيذ المزامنة'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <form className="adminBranchForm" onSubmit={handleCreateBranch}>
@@ -298,6 +463,10 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
                   {branch.id === currentBranchId ? 'قيد الإدارة' : 'التبديل لهذا الفرع'}
                 </button>
 
+                <button type="button" onClick={() => toggleQrPanel(branch)}>
+                  {qrOpenFor === branch.id ? 'إخفاء الرابط وQR' : 'الرابط ورمز QR'}
+                </button>
+
                 {!branch.isDefault && (
                   <select
                     value={branch.status}
@@ -317,6 +486,31 @@ function BranchesManager({ onBack, currentBranchId, onSwitchBranch }) {
                   </button>
                 )}
               </div>
+
+              {qrOpenFor === branch.id && (
+                <div className="adminBranchQrPanel">
+                  <div className="adminBranchQrUrlRow">
+                    <input type="text" readOnly value={getBranchMenuUrl(branch.code)} />
+                    <button type="button" onClick={() => copyBranchUrl(branch)}>
+                      {copiedFor === branch.id ? 'تم النسخ ✓' : 'نسخ الرابط'}
+                    </button>
+                    <a href={getBranchMenuUrl(branch.code)} target="_blank" rel="noreferrer">
+                      فتح المنيو
+                    </a>
+                  </div>
+
+                  {qrDataUrls[branch.id] ? (
+                    <div className="adminBranchQrImageRow">
+                      <img src={qrDataUrls[branch.id]} alt={`QR ${branch.nameAr || branch.nameEn}`} width={140} height={140} />
+                      <button type="button" onClick={() => downloadBranchQr(branch)}>
+                        تحميل QR
+                      </button>
+                    </div>
+                  ) : (
+                    <p>جاري توليد رمز QR...</p>
+                  )}
+                </div>
+              )}
             </article>
           ))}
         </div>

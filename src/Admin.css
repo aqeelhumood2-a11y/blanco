@@ -1951,6 +1951,106 @@
   font-weight: 700;
 }
 
+.adminBranchQrPanel {
+  flex-basis: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee2f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adminBranchQrUrlRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.adminBranchQrUrlRow input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.adminBranchQrUrlRow button,
+.adminBranchQrUrlRow a {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: #542065;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.adminBranchQrImageRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adminBranchQrImageRow img {
+  border-radius: 8px;
+  border: 1px solid #e4dbe9;
+  background: #fff;
+}
+
+.adminBranchSyncPanel {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adminBranchSyncPanel h3 {
+  margin: 0;
+}
+
+.adminSyncSourceLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  color: #542065;
+  max-width: 320px;
+}
+
+.adminSyncSourceLabel select {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+}
+
+.adminSyncAspectsGrid,
+.adminSyncTargetsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.adminSyncAspectOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .adminBranchCard {
     flex-direction: column;
@@ -1958,6 +2058,10 @@
   }
 
   .adminCategoryActions {
+    width: 100%;
+  }
+
+  .adminBranchQrUrlRow input {
     width: 100%;
   }
 }
