@@ -311,6 +311,16 @@ function ProductsManager({ onBack, currency }) {
         priceSchedule,
       })
 
+      if (editingProduct) {
+        // Clear any stale broken-image flag so a corrected image URL is retried
+        // instead of continuing to show "unavailable" from the previous value.
+        setImageErrorIds((prev) => {
+          const next = { ...prev }
+          delete next[rowKey(editingProduct)]
+          return next
+        })
+      }
+
       setShowProductForm(false)
       resetProductForm()
 
@@ -728,32 +738,32 @@ function ProductsManager({ onBack, currency }) {
           {filteredProducts.length === 0 ? (
             <p>لا توجد منتجات مطابقة</p>
           ) : (
-            <table className="adminProductsTable">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredProducts.length > 0 &&
-                        filteredProducts.every((p) => selectedKeys.includes(rowKey(p)))
-                      }
-                      onChange={toggleSelectAll}
-                      aria-label="تحديد كل المنتجات الظاهرة"
-                    />
-                  </th>
-                  <th>الصورة</th>
-                  <th>المنتج</th>
-                  <th>القسم</th>
-                  <th>السعر</th>
-                  <th>الحالة</th>
-                  <th>التحكم</th>
-                </tr>
-              </thead>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <table className="adminProductsTable">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredProducts.length > 0 &&
+                          filteredProducts.every((p) => selectedKeys.includes(rowKey(p)))
+                        }
+                        onChange={toggleSelectAll}
+                        aria-label="تحديد كل المنتجات الظاهرة"
+                      />
+                    </th>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>القسم</th>
+                    <th>السعر</th>
+                    <th>الحالة</th>
+                    <th>التحكم</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <tbody>
                   <SortableContext items={filteredProducts.map(rowKey)} strategy={verticalListSortingStrategy}>
                     {filteredProducts.map((product) => {
                       const key = rowKey(product)
@@ -777,9 +787,9 @@ function ProductsManager({ onBack, currency }) {
                       )
                     })}
                   </SortableContext>
-                </DndContext>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </DndContext>
           )}
         </div>
       )}
