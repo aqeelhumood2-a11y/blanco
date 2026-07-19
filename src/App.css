@@ -76,6 +76,7 @@
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: 4px;
+  color: var(--hero-title-color, #ffffff);
   text-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -96,6 +97,7 @@
   font-family: var(--english-font, 'Montserrat'), sans-serif;
   font-size: calc(clamp(22px, 3.6vw, 34px) * var(--text-scale, 1));
   font-weight: 600;
+  color: var(--hero-text-en-color, #ffffff);
 }
 
 .welcome h3 {
@@ -103,6 +105,7 @@
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
   font-size: calc(clamp(21px, 3.4vw, 31px) * var(--text-scale, 1));
   font-weight: 600;
+  color: var(--hero-text-ar-color, #ffffff);
 }
 
 .description {
@@ -115,11 +118,13 @@
   line-height: 1.8;
   opacity: 0.9;
   font-family: var(--english-font, 'Montserrat'), sans-serif;
+  color: var(--hero-text-en-color, #ffffff);
 }
 
 .description p:last-child {
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
   font-size: calc(17px * var(--text-scale, 1));
+  color: var(--hero-text-ar-color, #ffffff);
 }
 
 .workingHours {
@@ -129,28 +134,34 @@
   padding: 13px 27px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  gap: 10px;
+  border: 1px solid var(--hero-hours-border-color, rgba(255, 255, 255, 0.28));
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hero-hours-bg-color, rgba(255, 255, 255, 0.1));
   backdrop-filter: blur(13px);
+}
+
+.workingHoursRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workingHoursRow + .workingHoursRow {
+  padding-top: 10px;
+  border-top: 1px solid var(--hero-hours-border-color, rgba(255, 255, 255, 0.28));
 }
 
 .workingHours span {
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
   font-size: 14px;
+  color: var(--hero-hours-text-color, #ffffff);
 }
 
 .workingHours strong {
   font-size: 19px;
   letter-spacing: 1px;
-}
-
-.workingHoursClosed {
-  font-family: var(--arabic-font, 'Cairo'), sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #ffb4b4;
+  color: var(--hero-hours-text-color, #ffffff);
 }
 
 .downArrow {
@@ -160,7 +171,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--hero-down-arrow-color, #ffffff);
   font-size: 31px;
   text-decoration: none;
   border-radius: 50%;
@@ -168,7 +179,7 @@
 }
 
 .downArrow:focus-visible {
-  outline: 2px solid #ffffff;
+  outline: 2px solid var(--hero-down-arrow-color, #ffffff);
   outline-offset: 3px;
 }
 
@@ -507,34 +518,6 @@
   letter-spacing: 1.5px;
 }
 
-.weeklyScheduleList {
-  list-style: none;
-  margin: 0 0 30px;
-  padding: 0;
-  width: min(420px, 100%);
-  margin-inline: auto;
-  display: grid;
-  gap: 6px;
-}
-
-.weeklyScheduleList li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.5);
-  color: var(--text-color, #26132e);
-  font-family: var(--arabic-font, 'Cairo'), sans-serif;
-  font-size: 14px;
-}
-
-.weeklyScheduleToday {
-  background: var(--primary-color, #582369) !important;
-  color: #ffffff !important;
-  font-weight: 700;
-}
-
 .contactLinks {
   display: flex;
   flex-wrap: wrap;
@@ -592,6 +575,32 @@
   font-weight: 600;
   letter-spacing: 3px;
   overflow-wrap: break-word;
+}
+
+.footerContact {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px 16px;
+}
+
+.footerContactItem {
+  font-family: var(--english-font, 'Montserrat'), sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--footer-text-color, #ffffff);
+  opacity: 0.82;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+a.footerContactItem:hover,
+a.footerContactItem:focus-visible {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 /* ---------- Lightbox ---------- */
@@ -811,6 +820,14 @@
     min-width: 140px;
     padding: 12px 14px;
     font-size: 13px;
+  }
+
+  .footerContact {
+    gap: 6px 12px;
+  }
+
+  .footerContactItem {
+    font-size: 11px;
   }
 }
 

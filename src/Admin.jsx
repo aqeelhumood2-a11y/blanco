@@ -31,6 +31,7 @@ import {
   dayKeys,
   dayLabels,
   defaultContactSettings,
+  defaultHeroHours,
   defaultImageCrop,
   defaultSiteSettings,
   defaultThemeSettings,
@@ -39,9 +40,11 @@ import {
   heroAlignOptions,
   heroCropRatioOptions,
   logoPositionOptions,
+  normalizeHeroHours,
   normalizeImageCrop,
   normalizeWeeklyHours,
   slugifyName,
+  validateHeroHours,
   validateWeeklyHours,
 } from './admin/utils/adminUtils.js'
 import {
@@ -109,6 +112,10 @@ function Admin() {
   const [weeklyHours, setWeeklyHours] = useState(defaultWeeklyHours())
   const [weekdayPreset, setWeekdayPreset] = useState({ open: '08:00', close: '02:00' })
   const [weekendPreset, setWeekendPreset] = useState({ open: '08:00', close: '02:00' })
+  // Public-facing hero/header opening-hours box: independent from the
+  // 7-day `weeklyHours` schedule above, which stays editable here but is
+  // no longer shown on the public homepage.
+  const [heroHours, setHeroHours] = useState(defaultHeroHours())
 
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -176,6 +183,20 @@ function Admin() {
   const [footerTextColor, setFooterTextColor] = useState(defaultThemeSettings.footerTextColor)
   const [accentColor, setAccentColor] = useState(defaultThemeSettings.accentColor)
 
+  const [heroTitleColor, setHeroTitleColor] = useState(defaultThemeSettings.heroTitleColor)
+  const [heroTextEnColor, setHeroTextEnColor] = useState(defaultThemeSettings.heroTextEnColor)
+  const [heroTextArColor, setHeroTextArColor] = useState(defaultThemeSettings.heroTextArColor)
+  const [heroHoursBgColor, setHeroHoursBgColor] = useState(defaultThemeSettings.heroHoursBgColor)
+  const [heroHoursBorderColor, setHeroHoursBorderColor] = useState(
+    defaultThemeSettings.heroHoursBorderColor,
+  )
+  const [heroHoursTextColor, setHeroHoursTextColor] = useState(
+    defaultThemeSettings.heroHoursTextColor,
+  )
+  const [heroDownArrowColor, setHeroDownArrowColor] = useState(
+    defaultThemeSettings.heroDownArrowColor,
+  )
+
   const [logoPosition, setLogoPosition] = useState(defaultThemeSettings.logoPosition)
   const [logoSize, setLogoSize] = useState(defaultThemeSettings.logoSize)
   const [logoSpacingTop, setLogoSpacingTop] = useState(defaultThemeSettings.logoSpacingTop)
@@ -194,6 +215,9 @@ function Admin() {
 
   const [phone, setPhone] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [website, setWebsite] = useState('')
+  const [address, setAddress] = useState('')
   const [googleMapsUrl, setGoogleMapsUrl] = useState('')
   const [instagramUrl, setInstagramUrl] = useState('')
   const [tiktokUrl, setTiktokUrl] = useState('')
@@ -372,6 +396,7 @@ function Admin() {
         data.contactHeadingAr ?? defaultSiteSettings.contactHeadingAr,
       )
       setWeeklyHours(normalizeWeeklyHours(data.weeklyHours) ?? defaultWeeklyHours())
+      setHeroHours(normalizeHeroHours(data.heroHours))
     } catch (settingsError) {
       console.error(settingsError)
       setError('تعذر تحميل إعدادات الموقع')
@@ -398,6 +423,15 @@ function Admin() {
       return
     }
 
+    const heroHoursCheck = validateHeroHours(heroHours)
+
+    if (!heroHoursCheck.valid) {
+      setError(heroHoursCheck.message)
+      savingSettingsLock.current = false
+      setSavingSettings(false)
+      return
+    }
+
     try {
       await setDoc(
         siteSettingsDocRef(currentBranchId),
@@ -417,6 +451,7 @@ function Admin() {
           contactHeadingEn: contactHeadingEn.trim(),
           contactHeadingAr: contactHeadingAr.trim(),
           weeklyHours,
+          heroHours,
         },
         { merge: true },
       )
@@ -524,6 +559,15 @@ function Admin() {
       )
       setButtonSize(data.buttonSize || defaultThemeSettings.buttonSize)
       setTextScale(clampTextScale(data.textScale ?? defaultThemeSettings.textScale))
+      setHeroTitleColor(data.heroTitleColor ?? defaultThemeSettings.heroTitleColor)
+      setHeroTextEnColor(data.heroTextEnColor ?? defaultThemeSettings.heroTextEnColor)
+      setHeroTextArColor(data.heroTextArColor ?? defaultThemeSettings.heroTextArColor)
+      setHeroHoursBgColor(data.heroHoursBgColor ?? defaultThemeSettings.heroHoursBgColor)
+      setHeroHoursBorderColor(
+        data.heroHoursBorderColor ?? defaultThemeSettings.heroHoursBorderColor,
+      )
+      setHeroHoursTextColor(data.heroHoursTextColor ?? defaultThemeSettings.heroHoursTextColor)
+      setHeroDownArrowColor(data.heroDownArrowColor ?? defaultThemeSettings.heroDownArrowColor)
       setHeroImageError(false)
       setLogoImageError(false)
     } catch (themeError) {
@@ -590,6 +634,13 @@ function Admin() {
           sectionSpacingScale: clampScaleFactor(sectionSpacingScale),
           buttonSize,
           textScale: clampTextScale(textScale),
+          heroTitleColor,
+          heroTextEnColor,
+          heroTextArColor,
+          heroHoursBgColor,
+          heroHoursBorderColor,
+          heroHoursTextColor,
+          heroDownArrowColor,
         },
         { merge: true },
       )
@@ -656,6 +707,10 @@ function Admin() {
     setWeeklyHours((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }
 
+  function updateHeroHoursRow(rowKey, patch) {
+    setHeroHours((prev) => ({ ...prev, [rowKey]: { ...prev[rowKey], ...patch } }))
+  }
+
   async function loadContactSettings() {
     setContactLoading(true)
     setContactMessage('')
@@ -667,6 +722,9 @@ function Admin() {
 
       setPhone(data.phone ?? defaultContactSettings.phone)
       setWhatsapp(data.whatsapp ?? defaultContactSettings.whatsapp)
+      setContactEmail(data.email ?? defaultContactSettings.email)
+      setWebsite(data.website ?? defaultContactSettings.website)
+      setAddress(data.address ?? defaultContactSettings.address)
       setGoogleMapsUrl(
         data.googleMapsUrl ?? defaultContactSettings.googleMapsUrl,
       )
@@ -706,6 +764,9 @@ function Admin() {
         {
           phone: phone.trim(),
           whatsapp: whatsapp.trim(),
+          email: contactEmail.trim(),
+          website: website.trim(),
+          address: address.trim(),
           googleMapsUrl: googleMapsUrl.trim(),
           instagramUrl: instagramUrl.trim(),
           tiktokUrl: tiktokUrl.trim(),
@@ -1309,8 +1370,12 @@ function Admin() {
               </div>
 
               <div className="adminWeeklyHoursSection">
-                <h3>ساعات العمل الأسبوعية</h3>
-                <p>حدد وقت الفتح والإغلاق لكل يوم، أو أغلق اليوم بالكامل. سيعرض الموقع تلقائيًا ساعات اليوم الحالي.</p>
+                <h3>ساعات العمل الأسبوعية (سجل تفصيلي)</h3>
+                <p>
+                  حدد وقت الفتح والإغلاق لكل يوم، أو أغلق اليوم بالكامل. هذا الجدول التفصيلي يُحفظ في
+                  قاعدة البيانات لكنه لا يظهر للزوار — ما يظهر فعليًا في الموقع هو صندوق ساعات العمل
+                  أدناه.
+                </p>
 
                 <div className="adminWeeklyPresetsRow">
                   <div className="adminWeeklyPreset">
@@ -1388,6 +1453,70 @@ function Admin() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="adminHeroHoursSection">
+                <h3>ساعات العمل الظاهرة في الهيدر</h3>
+                <p>
+                  هذا هو ما يراه الزوار فعليًا أعلى الموقع — صفّان بحد أقصى، كل صف بعنوان ووقت خاص بك،
+                  ويمكن إخفاء أي صف لا تريد عرضه.
+                </p>
+
+                {['row1', 'row2'].map((rowKey) => (
+                  <div className="adminHeroHoursRow" key={rowKey}>
+                    <label className="productVisibleLabel">
+                      <input
+                        type="checkbox"
+                        checked={heroHours[rowKey].visible}
+                        onChange={(event) =>
+                          updateHeroHoursRow(rowKey, { visible: event.target.checked })
+                        }
+                      />
+                      إظهار هذا الصف
+                    </label>
+
+                    <label>
+                      العنوان بالإنجليزي
+                      <input
+                        type="text"
+                        value={heroHours[rowKey].labelEn}
+                        onChange={(event) =>
+                          updateHeroHoursRow(rowKey, { labelEn: event.target.value })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      العنوان بالعربي
+                      <input
+                        type="text"
+                        value={heroHours[rowKey].labelAr}
+                        dir="rtl"
+                        onChange={(event) =>
+                          updateHeroHoursRow(rowKey, { labelAr: event.target.value })
+                        }
+                      />
+                    </label>
+
+                    <label>
+                      وقت الفتح
+                      <input
+                        type="time"
+                        value={heroHours[rowKey].open}
+                        onChange={(event) => updateHeroHoursRow(rowKey, { open: event.target.value })}
+                      />
+                    </label>
+
+                    <label>
+                      وقت الإغلاق
+                      <input
+                        type="time"
+                        value={heroHours[rowKey].close}
+                        onChange={(event) => updateHeroHoursRow(rowKey, { close: event.target.value })}
+                      />
+                    </label>
+                  </div>
+                ))}
               </div>
 
               {settingsMessage && (
@@ -1743,7 +1872,107 @@ function Admin() {
                     <span>{accentColor}</span>
                   </div>
                 </label>
+              </div>
 
+              <h3 className="adminSubheading">ألوان الهيدر الرئيسي</h3>
+              <p className="adminSubheadingHint">
+                تحكم مستقل بكل عنصر في صورة الهيدر — لا تؤثر هذه الألوان على أي فرع آخر.
+              </p>
+
+              <div className="adminSiteSettingsGrid">
+                <label>
+                  لون العنوان الرئيسي (BLANCO)
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroTitleColor}
+                      onChange={(event) => setHeroTitleColor(event.target.value)}
+                    />
+                    <span>{heroTitleColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون النص الإنجليزي
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroTextEnColor}
+                      onChange={(event) => setHeroTextEnColor(event.target.value)}
+                    />
+                    <span>{heroTextEnColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون النص العربي
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroTextArColor}
+                      onChange={(event) => setHeroTextArColor(event.target.value)}
+                    />
+                    <span>{heroTextArColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون خلفية صندوق ساعات العمل
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroHoursBgColor}
+                      onChange={(event) => setHeroHoursBgColor(event.target.value)}
+                    />
+                    <span>{heroHoursBgColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون حدود صندوق ساعات العمل
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroHoursBorderColor}
+                      onChange={(event) => setHeroHoursBorderColor(event.target.value)}
+                    />
+                    <span>{heroHoursBorderColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون نصوص ساعات العمل (العنوان والوقت)
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroHoursTextColor}
+                      onChange={(event) => setHeroHoursTextColor(event.target.value)}
+                    />
+                    <span>{heroHoursTextColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون سهم النزول للأسفل
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={heroDownArrowColor}
+                      onChange={(event) => setHeroDownArrowColor(event.target.value)}
+                    />
+                    <span>{heroDownArrowColor}</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="adminSiteSettingsGrid">
                 <label>
                   الخط العربي
 
@@ -1988,6 +2217,38 @@ function Admin() {
                     onChange={(event) =>
                       setWhatsapp(event.target.value)
                     }
+                  />
+                </label>
+
+                <label>
+                  البريد الإلكتروني
+
+                  <input
+                    type="email"
+                    value={contactEmail}
+                    onChange={(event) => setContactEmail(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  رابط الموقع الإلكتروني
+
+                  <input
+                    type="text"
+                    value={website}
+                    placeholder="example.com"
+                    onChange={(event) => setWebsite(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  العنوان
+
+                  <input
+                    type="text"
+                    value={address}
+                    dir="rtl"
+                    onChange={(event) => setAddress(event.target.value)}
                   />
                 </label>
 
