@@ -4,6 +4,10 @@ import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
 import { menuSections } from './menuData.js'
+import { applyAdminSeo, applyPublicSeo } from './seo.js'
+import InstallPrompt from './pwa/InstallPrompt.jsx'
+import PwaUpdatePrompt from './pwa/PwaUpdatePrompt.jsx'
+import { usePwaUpdate } from './pwa/usePwaUpdate.js'
 import {
   clampImageOffset,
   clampImageScale,
@@ -86,8 +90,15 @@ function ProductImage({ src, alt, crop, onClick, failed, onError }) {
 
   if (!resolvedSrc || failed) {
     return (
-      <div className="productImage">
-        <span>IMAGE</span>
+      <div className="productImage productImagePlaceholder" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+          <path
+            d="M4 8h13v5.2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"
+            strokeLinejoin="round"
+          />
+          <path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8 4.5c-.6.6-.6 1.4 0 2M12 4.5c-.6.6-.6 1.4 0 2" strokeLinecap="round" />
+        </svg>
       </div>
     )
   }
@@ -174,6 +185,7 @@ function App() {
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
   const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
+  const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
   const branchId = parseBranchIdFromPath(window.location.pathname)
@@ -390,6 +402,46 @@ function App() {
     }
   }, [isAdminPage, branchId])
 
+  useEffect(() => {
+    if (isAdminPage) {
+      applyAdminSeo()
+      return
+    }
+
+    if (branchState.status !== 'ok' || themeLoading) {
+      return
+    }
+
+    const canonicalUrl =
+      branchId === DEFAULT_BRANCH_ID
+        ? `${window.location.origin}/`
+        : `${window.location.origin}/menu/${branchState.branch?.code || branchId}`
+
+    const image =
+      convertGoogleDriveLink(themeSettings.heroBackgroundUrl) ||
+      convertGoogleDriveLink(themeSettings.logoUrl) ||
+      ''
+
+    applyPublicSeo({
+      siteNameEn: siteSettings.siteNameEn,
+      siteNameAr: siteSettings.siteNameAr,
+      descriptionEn: siteSettings.descriptionEn,
+      phone: contactSettings.phone,
+      address: branchState.branch?.address,
+      imageUrl: image,
+      canonicalUrl,
+      weeklyHours: siteSettings.weeklyHours,
+    })
+  }, [
+    isAdminPage,
+    branchId,
+    branchState,
+    themeLoading,
+    siteSettings,
+    themeSettings,
+    contactSettings,
+  ])
+
   if (isAdminPage) {
     return (
       <Suspense fallback={<main className="adminLoading" dir="rtl">جاري التحميل...</main>}>
@@ -501,7 +553,12 @@ function App() {
     backgroundColor: themeSettings.pageBackgroundColor,
   }
 if (themeLoading) {
-  return null
+  return (
+    <main className="branchNotice">
+      <div className="pageLoadingSpinner" aria-hidden="true" />
+      <p>Loading menu... | جاري تحميل القائمة...</p>
+    </main>
+  )
 }
   return (
     <main className="website" style={rootStyle}>
@@ -572,38 +629,31 @@ if (themeLoading) {
         </div>
       </section>
 
-      <nav className="categoryNavigation">
-        <div className="categoryNavigationInner">
-          {firebaseMenu.map((section) => (
-            <a key={section.id} href={`#${section.id}`} className="navItem">
-              <span>{section.titleEn}</span>
-              <small>{section.titleAr}</small>
-            </a>
-          ))}
-        </div>
-      </nav>
-
-      {menuLoading && (
-        <p
-          style={{
-            textAlign: 'center',
-            padding: '25px',
-          }}
-        >
-          جاري تحديث المنيو...
-        </p>
+      {firebaseMenu.length > 0 && (
+        <nav className="categoryNavigation">
+          <div className="categoryNavigationInner">
+            {firebaseMenu.map((section) => (
+              <a key={section.id} href={`#${section.id}`} className="navItem">
+                <span>{section.titleEn}</span>
+                <small>{section.titleAr}</small>
+              </a>
+            ))}
+          </div>
+        </nav>
       )}
 
-      {menuError && (
-        <p
-          style={{
-            textAlign: 'center',
-            padding: '15px',
-            color: '#a01616',
-          }}
-        >
-          {menuError}
-        </p>
+      {menuLoading && <p className="menuStatusMessage">جاري تحديث المنيو...</p>}
+
+      {menuError && <p className="menuStatusMessage menuStatusError">{menuError}</p>}
+
+      {!menuLoading && firebaseMenu.length === 0 && (
+        <div className="menuEmptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+            <path d="M4 8h13v5.2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z" strokeLinejoin="round" />
+            <path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p>Menu coming soon | القائمة قادمة قريبًا</p>
+        </div>
       )}
 
       <div className="menuArea">
@@ -616,6 +666,7 @@ if (themeLoading) {
                   src={convertGoogleDriveLink(section.imageUrl)}
                   alt={section.titleEn}
                   style={imageCropToStyle(section.imageCrop)}
+                  loading="lazy"
                 />
               ) : (
                 <span className="sectionNumber">
@@ -819,6 +870,9 @@ if (themeLoading) {
           onClose={closeLightbox}
         />
       )}
+
+      <InstallPrompt />
+      <PwaUpdatePrompt {...pwaUpdate} />
     </main>
   )
 }

@@ -8,6 +8,13 @@
   color: #fff;
 }
 
+.adminSectionLoading {
+  padding: 40px;
+  text-align: center;
+  color: #78667d;
+  font-weight: 700;
+}
+
 .adminLoginPage {
   min-height: 100vh;
   display: grid;
@@ -387,37 +394,6 @@
   grid-column: 1 / -1;
 }
 
-.adminImagePreview {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.adminCurrentProductImage {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 14px;
-  border: 1px solid #e4dbe9;
-  background: #f7f3f9;
-}
-
-.adminImagePlaceholder {
-  width: 120px;
-  height: 120px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  border: 1px dashed #cdbdd6;
-  background: #f7f3f9;
-  color: #9a86a3;
-  font-size: 12px;
-  text-align: center;
-  padding: 8px;
-}
-
 .adminImageUnavailable {
   width: 120px;
   height: 120px;
@@ -749,10 +725,6 @@
 
 .adminSiteSettingsGrid select {
   cursor: pointer;
-}
-
-.adminSiteSettingsGrid label.adminFullWidthField {
-  grid-column: 1 / -1;
 }
 
 .adminSiteSettingsForm button {

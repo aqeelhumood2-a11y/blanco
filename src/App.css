@@ -268,6 +268,39 @@
   background: var(--menu-background, transparent);
 }
 
+.menuStatusMessage {
+  text-align: center;
+  padding: 25px;
+  margin: 0;
+  color: var(--muted-text-color, #77637d);
+}
+
+.menuStatusError {
+  color: #a01616;
+}
+
+.menuEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 70px 20px;
+  color: var(--muted-text-color, #77637d);
+  text-align: center;
+}
+
+.menuEmptyState svg {
+  width: 46px;
+  height: 46px;
+  opacity: 0.5;
+}
+
+.menuEmptyState p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .menuSection {
   padding: calc(95px * var(--section-spacing-scale, 1)) 0 20px;
   scroll-margin-top: 75px;
@@ -349,9 +382,12 @@
     var(--primary-color, #653578) 45%,
     var(--heading-color, #35133f) 100%
   );
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 3px;
+}
+
+.productImagePlaceholder svg {
+  width: 34%;
+  height: 34%;
+  opacity: 0.7;
 }
 
 .productImage.hasImage {
@@ -814,4 +850,103 @@
   opacity: 0.85;
   margin: 0;
   max-width: 420px;
+}
+
+.pageLoadingSpinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(245, 238, 248, 0.25);
+  border-top-color: #f5eef8;
+  animation: pageLoadingSpin 0.8s linear infinite;
+}
+
+@keyframes pageLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageLoadingSpinner {
+    animation: none;
+  }
+}
+
+.installAppButton {
+  position: fixed;
+  inset-inline-end: 18px;
+  inset-block-end: 18px;
+  z-index: 40;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--english-font), sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--button-color, #542065);
+  box-shadow: 0 10px 30px rgba(40, 16, 47, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.installAppButton:hover {
+  transform: translateY(-2px);
+}
+
+.pwaToast {
+  position: fixed;
+  inset-inline: 16px;
+  inset-block-end: 16px;
+  z-index: 50;
+  max-width: 420px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #28102f;
+  color: #f5eef8;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+.pwaToast p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pwaToastActions {
+  display: flex;
+  gap: 10px;
+}
+
+.pwaToastActions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pwaToastActions button:not(.pwaToastDismiss) {
+  background: #f5eef8;
+  color: #28102f;
+}
+
+.pwaToastDismiss {
+  background: transparent;
+  color: #f5eef8;
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .installAppButton {
+    inset-block-end: 14px;
+    inset-inline-end: 14px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
 }

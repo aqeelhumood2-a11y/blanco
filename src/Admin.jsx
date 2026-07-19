@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -11,10 +11,14 @@ import { auth } from './firebase.js'
 import { menuSections } from './menuData.js'
 import './Admin.css'
 
-import ProductsManager from './admin/ProductsManager.jsx'
-import CategoriesManager from './admin/CategoriesManager.jsx'
-import BranchesManager from './admin/BranchesManager.jsx'
 import ImageCropEditor from './admin/components/ImageCropEditor.jsx'
+
+// Each manager (dnd-kit reordering, the QR generator, ...) only needs to
+// download once the admin actually opens that specific section — most
+// visits to /admin are a single settings tweak, not every section at once.
+const ProductsManager = lazy(() => import('./admin/ProductsManager.jsx'))
+const CategoriesManager = lazy(() => import('./admin/CategoriesManager.jsx'))
+const BranchesManager = lazy(() => import('./admin/BranchesManager.jsx'))
 import {
   arabicFontOptions,
   buttonSizeOptions,
@@ -942,7 +946,9 @@ function Admin() {
           </button>
         </header>
 
-        <ProductsManager onBack={goToDashboard} currency={currency} branchId={currentBranchId} />
+        <Suspense fallback={<p className="adminSectionLoading">جاري التحميل...</p>}>
+          <ProductsManager onBack={goToDashboard} currency={currency} branchId={currentBranchId} />
+        </Suspense>
       </main>
     )
   }
@@ -961,7 +967,9 @@ function Admin() {
           </button>
         </header>
 
-        <CategoriesManager onBack={goToDashboard} branchId={currentBranchId} />
+        <Suspense fallback={<p className="adminSectionLoading">جاري التحميل...</p>}>
+          <CategoriesManager onBack={goToDashboard} branchId={currentBranchId} />
+        </Suspense>
       </main>
     )
   }
@@ -980,11 +988,13 @@ function Admin() {
           </button>
         </header>
 
-        <BranchesManager
-          onBack={goToDashboard}
-          currentBranchId={currentBranchId}
-          onSwitchBranch={switchToBranch}
-        />
+        <Suspense fallback={<p className="adminSectionLoading">جاري التحميل...</p>}>
+          <BranchesManager
+            onBack={goToDashboard}
+            currentBranchId={currentBranchId}
+            onSwitchBranch={switchToBranch}
+          />
+        </Suspense>
       </main>
     )
   }
