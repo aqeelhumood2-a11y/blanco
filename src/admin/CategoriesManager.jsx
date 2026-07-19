@@ -98,7 +98,7 @@ function SortableCategoryCard({
   )
 }
 
-function CategoriesManager({ onBack }) {
+function CategoriesManager({ onBack, branchId }) {
   const {
     categories,
     loadingProducts,
@@ -112,7 +112,7 @@ function CategoriesManager({ onBack }) {
     reorderCategories,
     moveProductsToCategory,
     productCountByCategory,
-  } = useCategories()
+  } = useCategories(branchId)
 
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -144,8 +144,7 @@ function CategoriesManager({ onBack }) {
 
   useEffect(() => {
     loadCategories()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadCategories])
 
   useEffect(() => {
     if (showCategoryForm && categoryFormRef.current) {

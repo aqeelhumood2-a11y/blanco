@@ -141,7 +141,7 @@ function SortableProductRow({
   )
 }
 
-function ProductsManager({ onBack, currency }) {
+function ProductsManager({ onBack, currency, branchId }) {
   const {
     products,
     categories,
@@ -158,7 +158,7 @@ function ProductsManager({ onBack, currency }) {
     bulkUpdateVisibility,
     bulkUpdateCategory,
     bulkUpdateBadges,
-  } = useProducts()
+  } = useProducts(branchId)
 
   const [imageErrorIds, setImageErrorIds] = useState({})
   const [showProductForm, setShowProductForm] = useState(false)
@@ -211,8 +211,7 @@ function ProductsManager({ onBack, currency }) {
 
   useEffect(() => {
     loadProducts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadProducts])
 
   useEffect(() => {
     if (showProductForm && productFormRef.current) {

@@ -1,15 +1,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-} from 'firebase/firestore'
+import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
 import Admin from './Admin.jsx'
-import { db } from './firebase.js'
 import { menuSections } from './menuData.js'
 import {
   clampImageOffset,
@@ -31,6 +25,24 @@ import {
   isProductVisibleNow,
   normalizeWeeklyHours,
 } from './admin/utils/adminUtils.js'
+import {
+  DEFAULT_BRANCH_ID,
+  branchDocRef,
+  categoriesCollectionRef,
+  contactSettingsDocRef,
+  normalizeBranch,
+  productsCollectionRef,
+  siteSettingsDocRef,
+  themeSettingsDocRef,
+} from './admin/utils/branchPaths.js'
+
+// /menu/:code opens that branch's independent menu; anything else (including
+// the bare "/") falls back to the original/default branch so every link
+// that worked before branches existed keeps working unchanged.
+function parseBranchIdFromPath(pathname) {
+  const menuMatch = pathname.match(/^\/menu\/([a-z0-9-]+)\/?$/)
+  return menuMatch ? menuMatch[1] : DEFAULT_BRANCH_ID
+}
 
 // siteSettings/themeSettings/contactSettings all use the same shape the
 // admin panel edits and saves — a single shared source of defaults instead
@@ -156,8 +168,10 @@ function App() {
   const [lightboxImage, setLightboxImage] = useState(null)
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
+  const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
 
   const isAdminPage = window.location.pathname === '/admin'
+  const branchId = parseBranchIdFromPath(window.location.pathname)
 
   const closeLightbox = useCallback(() => {
     setLightboxImage(null)
@@ -176,10 +190,38 @@ function App() {
 
     let cancelled = false
 
+    async function loadBranchMeta() {
+      if (branchId === DEFAULT_BRANCH_ID) {
+        if (!cancelled) setBranchState({ status: 'ok', branch: null })
+        return
+      }
+
+      try {
+        const branchSnapshot = await getDoc(branchDocRef(branchId))
+
+        if (cancelled) return
+
+        if (!branchSnapshot.exists()) {
+          setBranchState({ status: 'not-found', branch: null })
+          return
+        }
+
+        const branch = normalizeBranch({ id: branchSnapshot.id, ...branchSnapshot.data() })
+
+        setBranchState({
+          status: branch.status === 'active' ? 'ok' : 'unavailable',
+          branch,
+        })
+      } catch (branchError) {
+        console.error(branchError)
+        if (!cancelled) setBranchState({ status: 'ok', branch: null })
+      }
+    }
+
     async function loadSiteSettings() {
       try {
         const settingsSnapshot = await getDoc(
-          doc(db, 'siteSettings', 'main'),
+          siteSettingsDocRef(branchId),
         )
 
         if (!cancelled && settingsSnapshot.exists()) {
@@ -206,7 +248,7 @@ function App() {
     async function loadThemeSettings() {
       setThemeLoading(true)
       try {
-        const themeSnapshot = await getDoc(doc(db, 'themeSettings', 'main'))
+        const themeSnapshot = await getDoc(themeSettingsDocRef(branchId))
 
         if (!cancelled && themeSnapshot.exists()) {
           const data = themeSnapshot.data()
@@ -244,7 +286,7 @@ function App() {
     async function loadContactSettings() {
       try {
         const contactSnapshot = await getDoc(
-          doc(db, 'contactSettings', 'main'),
+          contactSettingsDocRef(branchId),
         )
 
         if (!cancelled && contactSnapshot.exists()) {
@@ -263,7 +305,7 @@ function App() {
 
       try {
         const categoriesSnapshot = await getDocs(
-          collection(db, 'categories'),
+          categoriesCollectionRef(branchId),
         )
 
         const categories = categoriesSnapshot.docs
@@ -280,7 +322,7 @@ function App() {
         const sections = await Promise.all(
           categories.map(async (category) => {
             const productsSnapshot = await getDocs(
-              collection(db, 'categories', category.id, 'products'),
+              productsCollectionRef(branchId, category.id),
             )
 
             const products = productsSnapshot.docs
@@ -309,13 +351,16 @@ function App() {
           (section) => section.products.length > 0,
         )
 
-       if (!cancelled) {
-  setFirebaseMenu(
-    categoriesSnapshot.empty
-      ? menuSections
-      : visibleSections,
-  )
-}
+        if (!cancelled) {
+          // The bundled sample menu is only ever a placeholder for the
+          // original/default branch's very first load — any other branch
+          // with zero categories is a genuinely empty menu, not a demo.
+          setFirebaseMenu(
+            categoriesSnapshot.empty && branchId === DEFAULT_BRANCH_ID
+              ? menuSections
+              : visibleSections,
+          )
+        }
       } catch (loadError) {
         console.error(loadError)
 
@@ -329,6 +374,7 @@ function App() {
       }
     }
 
+    loadBranchMeta()
     loadSiteSettings()
     loadThemeSettings()
     loadContactSettings()
@@ -337,10 +383,28 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [isAdminPage])
+  }, [isAdminPage, branchId])
 
   if (isAdminPage) {
     return <Admin />
+  }
+
+  if (branchState.status === 'not-found') {
+    return (
+      <main className="branchNotice">
+        <h1>Branch not found | الفرع غير موجود</h1>
+        <p>This menu link doesn't match any branch. | لا يوجد فرع مطابق لهذا الرابط.</p>
+      </main>
+    )
+  }
+
+  if (branchState.status === 'unavailable') {
+    return (
+      <main className="branchNotice">
+        <h1>Menu unavailable | القائمة غير متاحة حاليًا</h1>
+        <p>This branch's menu isn't published right now. | قائمة هذا الفرع غير منشورة حاليًا.</p>
+      </main>
+    )
   }
 
  const firstSectionId = firebaseMenu[0]?.id || ''

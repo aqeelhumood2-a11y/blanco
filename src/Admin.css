@@ -1810,3 +1810,115 @@
     width: 100%;
   }
 }
+
+/* ---------- Branch Management ---------- */
+.adminBranchForm {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+}
+
+.adminBranchForm h3 {
+  margin: 0 0 14px;
+}
+
+.adminBranchFormGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.adminBranchFormGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #542065;
+}
+
+.adminBranchFormGrid input {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+}
+
+.adminBranchesList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.adminBranchCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+  border: 2px solid transparent;
+}
+
+.adminBranchCardActive {
+  border-color: #542065;
+}
+
+.adminBranchCard h3 {
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adminBranchCard p {
+  margin: 0 0 6px;
+  color: #78667d;
+}
+
+.adminBranchCard small {
+  display: block;
+  color: #8a7690;
+}
+
+.adminBranchDefaultTag,
+.adminBranchCurrentTag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f1e8f5;
+  color: #542065;
+}
+
+.adminBranchCurrentTag {
+  background: #542065;
+  color: #fff;
+}
+
+.adminBranchCard select {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .adminBranchCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminCategoryActions {
+    width: 100%;
+  }
+}

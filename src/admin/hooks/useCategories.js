@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore'
+import { deleteDoc, getDoc, getDocs, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import {
   convertGoogleDriveLink,
@@ -10,6 +10,13 @@ import {
   runChunkedBatch,
   validateOrderValue,
 } from '../utils/adminUtils.js'
+import {
+  DEFAULT_BRANCH_ID,
+  categoriesCollectionRef,
+  categoryDocRef,
+  productDocRef,
+  productsCollectionRef,
+} from '../utils/branchPaths.js'
 
 function normalizeCategory(raw) {
   return {
@@ -22,7 +29,7 @@ function normalizeCategory(raw) {
   }
 }
 
-export function useCategories() {
+export function useCategories(branchId = DEFAULT_BRANCH_ID) {
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [loadingProducts, setLoadingProducts] = useState(false)
@@ -33,7 +40,7 @@ export function useCategories() {
     setError('')
 
     try {
-      const categoriesSnapshot = await getDocs(collection(db, 'categories'))
+      const categoriesSnapshot = await getDocs(categoriesCollectionRef(branchId))
 
       const loadedCategories = categoriesSnapshot.docs
         .map((categoryDoc) => normalizeCategory({ id: categoryDoc.id, ...categoryDoc.data() }))
@@ -41,7 +48,7 @@ export function useCategories() {
 
       const productSnapshots = await Promise.all(
         loadedCategories.map((category) =>
-          getDocs(collection(db, 'categories', category.id, 'products')),
+          getDocs(productsCollectionRef(branchId, category.id)),
         ),
       )
 
@@ -61,7 +68,7 @@ export function useCategories() {
     } finally {
       setLoadingProducts(false)
     }
-  }, [])
+  }, [branchId])
 
   // Built once per products/categories change and reused everywhere,
   // instead of calling products.filter() per category card.
@@ -105,7 +112,7 @@ export function useCategories() {
       imageCrop: normalizeImageCrop(categoryImageCrop),
     }
 
-    await setDoc(doc(db, 'categories', categoryId), data, { merge: true })
+    await setDoc(categoryDocRef(branchId, categoryId), data, { merge: true })
 
     setCategories((prev) => {
       const next = isNewCategory
@@ -124,7 +131,7 @@ export function useCategories() {
     // Authoritative check against Firestore, not local state, since
     // subcollections are never auto-deleted and stale state could
     // otherwise let an orphaned products subcollection through.
-    const liveProductsSnap = await getDocs(collection(db, 'categories', category.id, 'products'))
+    const liveProductsSnap = await getDocs(productsCollectionRef(branchId, category.id))
 
     if (!liveProductsSnap.empty) {
       throw new Error('لا يمكن حذف القسم لوجود منتجات بداخله، انقل المنتجات أولًا')
@@ -134,7 +141,7 @@ export function useCategories() {
     setCategories((prev) => prev.filter((item) => item.id !== category.id))
 
     try {
-      await deleteDoc(doc(db, 'categories', category.id))
+      await deleteDoc(categoryDocRef(branchId, category.id))
     } catch (err) {
       console.error(err)
       setCategories(previous)
@@ -151,7 +158,7 @@ export function useCategories() {
     )
 
     try {
-      await setDoc(doc(db, 'categories', category.id), { visible: nextVisible }, { merge: true })
+      await setDoc(categoryDocRef(branchId, category.id), { visible: nextVisible }, { merge: true })
     } catch (err) {
       console.error(err)
       setCategories(previous)
@@ -172,16 +179,16 @@ export function useCategories() {
       color: safeColor,
     }
 
-    await setDoc(doc(db, 'categories', newId), categoryData)
+    await setDoc(categoryDocRef(branchId, newId), categoryData)
 
     try {
-      const liveProductsSnap = await getDocs(collection(db, 'categories', category.id, 'products'))
+      const liveProductsSnap = await getDocs(productsCollectionRef(branchId, category.id))
 
       const operationBuilders = liveProductsSnap.docs.map((productDoc) => (batch) => {
         const productData = productDoc.data()
         const duplicateId = createUniqueId(productData.nameEn || 'product')
 
-        batch.set(doc(db, 'categories', newId, 'products', duplicateId), {
+        batch.set(productDocRef(branchId, newId, duplicateId), {
           ...productData,
           status: 'draft',
         })
@@ -192,7 +199,7 @@ export function useCategories() {
       console.error(err)
       // Roll back the partially-created category so nothing orphaned
       // is left behind if copying the products failed.
-      await deleteDoc(doc(db, 'categories', newId)).catch((cleanupError) => {
+      await deleteDoc(categoryDocRef(branchId, newId)).catch((cleanupError) => {
         console.error(cleanupError)
       })
       throw new Error('تعذر نسخ منتجات القسم، تم التراجع عن العملية')
@@ -218,7 +225,7 @@ export function useCategories() {
 
     try {
       const operationBuilders = orderedIds.map((id, index) => (batch) => {
-        batch.set(doc(db, 'categories', id), { order: index + 1 }, { merge: true })
+        batch.set(categoryDocRef(branchId, id), { order: index + 1 }, { merge: true })
       })
 
       await runChunkedBatch(db, operationBuilders)
@@ -239,7 +246,7 @@ export function useCategories() {
       throw new Error('القسم الهدف غير موجود')
     }
 
-    const liveProductsSnap = await getDocs(collection(db, 'categories', sourceCategoryId, 'products'))
+    const liveProductsSnap = await getDocs(productsCollectionRef(branchId, sourceCategoryId))
 
     const operationBuilders = []
 
@@ -248,7 +255,7 @@ export function useCategories() {
 
       // eslint-disable-next-line no-await-in-loop
       const collisionSnap = await getDoc(
-        doc(db, 'categories', targetCategoryId, 'products', productDoc.id),
+        productDocRef(branchId, targetCategoryId, productDoc.id),
       )
 
       const targetId = collisionSnap.exists()
@@ -256,8 +263,8 @@ export function useCategories() {
         : productDoc.id
 
       operationBuilders.push((batch) => {
-        batch.set(doc(db, 'categories', targetCategoryId, 'products', targetId), productData)
-        batch.delete(doc(db, 'categories', sourceCategoryId, 'products', productDoc.id))
+        batch.set(productDocRef(branchId, targetCategoryId, targetId), productData)
+        batch.delete(productDocRef(branchId, sourceCategoryId, productDoc.id))
       })
     }
 

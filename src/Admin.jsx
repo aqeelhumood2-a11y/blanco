@@ -5,14 +5,15 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { getDoc, setDoc } from 'firebase/firestore'
 
-import { auth, db } from './firebase.js'
+import { auth } from './firebase.js'
 import { menuSections } from './menuData.js'
 import './Admin.css'
 
 import ProductsManager from './admin/ProductsManager.jsx'
 import CategoriesManager from './admin/CategoriesManager.jsx'
+import BranchesManager from './admin/BranchesManager.jsx'
 import ImageCropEditor from './admin/components/ImageCropEditor.jsx'
 import {
   arabicFontOptions,
@@ -39,6 +40,15 @@ import {
   slugifyName,
   validateWeeklyHours,
 } from './admin/utils/adminUtils.js'
+import {
+  DEFAULT_BRANCH_ID,
+  categoryDocRef,
+  contactSettingsDocRef,
+  defaultBranchMeta,
+  productDocRef,
+  siteSettingsDocRef,
+  themeSettingsDocRef,
+} from './admin/utils/branchPaths.js'
 
 function Admin() {
   const [user, setUser] = useState(null)
@@ -54,6 +64,12 @@ function Admin() {
   const [uploadMessage, setUploadMessage] = useState('')
 
   const [view, setView] = useState('dashboard')
+
+  // Which branch's content (products, categories, settings) the admin is
+  // currently viewing/editing. Everything below reloads whenever this
+  // changes — switching branches never touches any other branch's data.
+  const [currentBranchId, setCurrentBranchId] = useState(DEFAULT_BRANCH_ID)
+  const [currentBranchMeta, setCurrentBranchMeta] = useState(defaultBranchMeta())
 
   const [showSiteSettings, setShowSiteSettings] = useState(false)
   const [settingsLoading, setSettingsLoading] = useState(false)
@@ -206,7 +222,21 @@ function Admin() {
       loadSiteSettings()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user, currentBranchId])
+
+  // Switching branches from the Branch Management screen always returns to
+  // the dashboard — every other section (theme/contact/products/categories)
+  // reloads its own data for the newly selected branch the moment it's opened.
+  function switchToBranch(branch) {
+    setCurrentBranchId(branch.id)
+    setCurrentBranchMeta(branch)
+    goToDashboard()
+  }
+
+  function openBranches() {
+    clearMessages()
+    setView('branches')
+  }
 
   useEffect(() => {
     if (showSiteSettings && siteSettingsRef.current) {
@@ -287,9 +317,7 @@ function Admin() {
     setSettingsMessage('')
 
     try {
-      const settingsDoc = await getDoc(
-        doc(db, 'siteSettings', 'main'),
-      )
+      const settingsDoc = await getDoc(siteSettingsDocRef(currentBranchId))
 
       const data = settingsDoc.exists()
         ? settingsDoc.data()
@@ -368,7 +396,7 @@ function Admin() {
 
     try {
       await setDoc(
-        doc(db, 'siteSettings', 'main'),
+        siteSettingsDocRef(currentBranchId),
         {
           siteNameEn: siteNameEn.trim(),
           siteNameAr: siteNameAr.trim(),
@@ -404,9 +432,7 @@ function Admin() {
     setThemeMessage('')
 
     try {
-      const themeDoc = await getDoc(
-        doc(db, 'themeSettings', 'main'),
-      )
+      const themeDoc = await getDoc(themeSettingsDocRef(currentBranchId))
 
       const data = themeDoc.exists() ? themeDoc.data() : {}
 
@@ -520,7 +546,7 @@ function Admin() {
       const finalLogoUrl = convertGoogleDriveLink(logoUrl.trim())
 
       await setDoc(
-        doc(db, 'themeSettings', 'main'),
+        themeSettingsDocRef(currentBranchId),
         {
           heroBackgroundUrl: finalHeroBackgroundUrl,
           logoUrl: finalLogoUrl,
@@ -631,9 +657,7 @@ function Admin() {
     setContactMessage('')
 
     try {
-      const contactDoc = await getDoc(
-        doc(db, 'contactSettings', 'main'),
-      )
+      const contactDoc = await getDoc(contactSettingsDocRef(currentBranchId))
 
       const data = contactDoc.exists() ? contactDoc.data() : {}
 
@@ -674,7 +698,7 @@ function Admin() {
 
     try {
       await setDoc(
-        doc(db, 'contactSettings', 'main'),
+        contactSettingsDocRef(currentBranchId),
         {
           phone: phone.trim(),
           whatsapp: whatsapp.trim(),
@@ -751,7 +775,7 @@ function Admin() {
       ) {
         const section = menuSections[sectionIndex]
 
-        const categoryRef = doc(db, 'categories', section.id)
+        const categoryRef = categoryDocRef(currentBranchId, section.id)
         const existingCategorySnap = await getDoc(categoryRef)
         const existingCategoryData = existingCategorySnap.exists()
           ? existingCategorySnap.data()
@@ -780,13 +804,7 @@ function Admin() {
           const product = section.products[productIndex]
           const productId = slugifyName(product.nameEn)
 
-          const productRef = doc(
-            db,
-            'categories',
-            section.id,
-            'products',
-            productId,
-          )
+          const productRef = productDocRef(currentBranchId, section.id, productId)
 
           const existingSnap = await getDoc(productRef)
           const existingData = existingSnap.exists()
@@ -916,7 +934,7 @@ function Admin() {
         <header className="adminTopBar">
           <div>
             <strong>BLANCO</strong>
-            <span>لوحة الإدارة</span>
+            <span>لوحة الإدارة · {currentBranchMeta.nameAr || currentBranchMeta.nameEn}</span>
           </div>
 
           <button type="button" onClick={handleLogout}>
@@ -924,7 +942,7 @@ function Admin() {
           </button>
         </header>
 
-        <ProductsManager onBack={goToDashboard} currency={currency} />
+        <ProductsManager onBack={goToDashboard} currency={currency} branchId={currentBranchId} />
       </main>
     )
   }
@@ -935,7 +953,7 @@ function Admin() {
         <header className="adminTopBar">
           <div>
             <strong>BLANCO</strong>
-            <span>لوحة الإدارة</span>
+            <span>لوحة الإدارة · {currentBranchMeta.nameAr || currentBranchMeta.nameEn}</span>
           </div>
 
           <button type="button" onClick={handleLogout}>
@@ -943,7 +961,30 @@ function Admin() {
           </button>
         </header>
 
-        <CategoriesManager onBack={goToDashboard} />
+        <CategoriesManager onBack={goToDashboard} branchId={currentBranchId} />
+      </main>
+    )
+  }
+
+  if (view === 'branches') {
+    return (
+      <main className="adminDashboard" dir="rtl">
+        <header className="adminTopBar">
+          <div>
+            <strong>BLANCO</strong>
+            <span>لوحة الإدارة · {currentBranchMeta.nameAr || currentBranchMeta.nameEn}</span>
+          </div>
+
+          <button type="button" onClick={handleLogout}>
+            تسجيل الخروج
+          </button>
+        </header>
+
+        <BranchesManager
+          onBack={goToDashboard}
+          currentBranchId={currentBranchId}
+          onSwitchBranch={switchToBranch}
+        />
       </main>
     )
   }
@@ -953,7 +994,7 @@ function Admin() {
       <header className="adminTopBar">
         <div>
           <strong>BLANCO</strong>
-          <span>لوحة الإدارة</span>
+          <span>لوحة الإدارة · {currentBranchMeta.nameAr || currentBranchMeta.nameEn}</span>
         </div>
 
         <button
@@ -1043,6 +1084,16 @@ function Admin() {
               <h2>التواصل</h2>
               <p>
                 تعديل رقم الهاتف والواتساب وروابط التواصل الاجتماعي.
+              </p>
+            </article>
+
+            <article
+              onClick={openBranches}
+              style={{ cursor: 'pointer' }}
+            >
+              <h2>إدارة الفروع</h2>
+              <p>
+                إنشاء فروع جديدة والتبديل بينها، كل فرع بمنتجاته وإعداداته الخاصة.
               </p>
             </article>
           </section>

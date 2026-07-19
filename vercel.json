@@ -3,6 +3,10 @@
     {
       "source": "/admin",
       "destination": "/index.html"
+    },
+    {
+      "source": "/menu/:branchCode",
+      "destination": "/index.html"
     }
   ]
 }

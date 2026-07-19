@@ -1,13 +1,5 @@
 import { useCallback, useState } from 'react'
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  writeBatch,
-} from 'firebase/firestore'
+import { deleteDoc, getDoc, getDocs, setDoc, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import {
   convertGoogleDriveLink,
@@ -24,6 +16,12 @@ import {
   validatePriceValue,
   validateSchedule,
 } from '../utils/adminUtils.js'
+import {
+  DEFAULT_BRANCH_ID,
+  categoriesCollectionRef,
+  productDocRef,
+  productsCollectionRef,
+} from '../utils/branchPaths.js'
 
 function normalizeOptionGroup(raw) {
   return {
@@ -95,7 +93,7 @@ function stripProductForFirestore(values) {
   }
 }
 
-export function useProducts() {
+export function useProducts(branchId = DEFAULT_BRANCH_ID) {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loadingProducts, setLoadingProducts] = useState(false)
@@ -106,7 +104,7 @@ export function useProducts() {
     setError('')
 
     try {
-      const categoriesSnapshot = await getDocs(collection(db, 'categories'))
+      const categoriesSnapshot = await getDocs(categoriesCollectionRef(branchId))
 
       const loadedCategories = categoriesSnapshot.docs
         .map((categoryDoc) => ({ id: categoryDoc.id, ...categoryDoc.data() }))
@@ -121,7 +119,7 @@ export function useProducts() {
 
       const productSnapshots = await Promise.all(
         loadedCategories.map((category) =>
-          getDocs(collection(db, 'categories', category.id, 'products')),
+          getDocs(productsCollectionRef(branchId, category.id)),
         ),
       )
 
@@ -158,7 +156,7 @@ export function useProducts() {
     } finally {
       setLoadingProducts(false)
     }
-  }, [])
+  }, [branchId])
 
   async function saveProduct(values) {
     const {
@@ -225,7 +223,7 @@ export function useProducts() {
     if (isNewProduct) {
       const newId = createUniqueId(productNameEn)
 
-      await setDoc(doc(db, 'categories', productCategory, 'products', newId), normalizedValues)
+      await setDoc(productDocRef(branchId, productCategory, newId), normalizedValues)
 
       const savedProduct = normalizeProduct({
         id: newId,
@@ -242,7 +240,7 @@ export function useProducts() {
 
     if (!isMovingCategory) {
       await setDoc(
-        doc(db, 'categories', editingProduct.categoryId, 'products', editingProduct.id),
+        productDocRef(branchId, editingProduct.categoryId, editingProduct.id),
         normalizedValues,
         { merge: true },
       )
@@ -262,15 +260,15 @@ export function useProducts() {
     // the create + delete atomically in a single batch.
     let targetId = editingProduct.id
 
-    const collisionSnap = await getDoc(doc(db, 'categories', productCategory, 'products', targetId))
+    const collisionSnap = await getDoc(productDocRef(branchId, productCategory, targetId))
 
     if (collisionSnap.exists()) {
       targetId = createUniqueId(productNameEn)
     }
 
     const batch = writeBatch(db)
-    batch.set(doc(db, 'categories', productCategory, 'products', targetId), normalizedValues)
-    batch.delete(doc(db, 'categories', editingProduct.categoryId, 'products', editingProduct.id))
+    batch.set(productDocRef(branchId, productCategory, targetId), normalizedValues)
+    batch.delete(productDocRef(branchId, editingProduct.categoryId, editingProduct.id))
     await batch.commit()
 
     const movedProduct = normalizeProduct({
@@ -301,7 +299,7 @@ export function useProducts() {
     )
 
     try {
-      await deleteDoc(doc(db, 'categories', product.categoryId, 'products', product.id))
+      await deleteDoc(productDocRef(branchId, product.categoryId, product.id))
     } catch (err) {
       console.error(err)
       setProducts(previous)
@@ -325,7 +323,7 @@ export function useProducts() {
 
     try {
       await setDoc(
-        doc(db, 'categories', product.categoryId, 'products', product.id),
+        productDocRef(branchId, product.categoryId, product.id),
         { visible: nextVisible },
         { merge: true },
       )
@@ -348,7 +346,7 @@ export function useProducts() {
       status: 'draft',
     })
 
-    await setDoc(doc(db, 'categories', product.categoryId, 'products', newId), duplicateData)
+    await setDoc(productDocRef(branchId, product.categoryId, newId), duplicateData)
     await loadProducts()
   }
 
@@ -375,7 +373,7 @@ export function useProducts() {
     try {
       const operationBuilders = orderedIds.map((productId, index) => (batch) => {
         batch.set(
-          doc(db, 'categories', categoryId, 'products', productId),
+          productDocRef(branchId, categoryId, productId),
           { order: index + 1 },
           { merge: true },
         )
@@ -391,7 +389,7 @@ export function useProducts() {
 
   async function bulkDeleteProducts(selectedProducts) {
     const operationBuilders = selectedProducts.map((product) => (batch) => {
-      batch.delete(doc(db, 'categories', product.categoryId, 'products', product.id))
+      batch.delete(productDocRef(branchId, product.categoryId, product.id))
     })
 
     await runChunkedBatch(db, operationBuilders)
@@ -401,7 +399,7 @@ export function useProducts() {
   async function bulkUpdateVisibility(selectedProducts, visible) {
     const operationBuilders = selectedProducts.map((product) => (batch) => {
       batch.set(
-        doc(db, 'categories', product.categoryId, 'products', product.id),
+        productDocRef(branchId, product.categoryId, product.id),
         { visible },
         { merge: true },
       )
@@ -427,12 +425,12 @@ export function useProducts() {
       const { id, categoryId: _categoryId, categoryNameEn: _categoryNameEn, categoryNameAr: _categoryNameAr, ...rest } = product
 
       // eslint-disable-next-line no-await-in-loop
-      const collisionSnap = await getDoc(doc(db, 'categories', newCategoryId, 'products', id))
+      const collisionSnap = await getDoc(productDocRef(branchId, newCategoryId, id))
       const targetId = collisionSnap.exists() ? createUniqueId(product.nameEn) : id
 
       operationBuilders.push((batch) => {
-        batch.set(doc(db, 'categories', newCategoryId, 'products', targetId), rest)
-        batch.delete(doc(db, 'categories', categoryId, 'products', id))
+        batch.set(productDocRef(branchId, newCategoryId, targetId), rest)
+        batch.delete(productDocRef(branchId, categoryId, id))
       })
     }
 
@@ -444,7 +442,7 @@ export function useProducts() {
     const operationBuilders = selectedProducts.map((product) => (batch) => {
       const merged = Array.from(new Set([...(product.badges || []), ...badgesToAdd]))
       batch.set(
-        doc(db, 'categories', product.categoryId, 'products', product.id),
+        productDocRef(branchId, product.categoryId, product.id),
         { badges: merged },
         { merge: true },
       )
