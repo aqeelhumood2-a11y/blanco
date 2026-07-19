@@ -844,8 +844,6 @@
   box-shadow: 0 0 0 3px rgba(107, 49, 125, 0.12);
 }
 
-/* Theme image previews reuse .adminImagePreview / .adminCurrentProductImage / .adminImagePlaceholder,
-   scoped to explicit hero/logo group classes rather than sibling position. */
 .adminImageAdjustGroup {
   margin-bottom: 18px;
   padding-bottom: 18px;
@@ -857,58 +855,77 @@
   padding-bottom: 0;
 }
 
-/* transform:scale() on the preview <img> paints beyond its own box, so the
-   clip boundary has to live on this wrapper — not on the <img> itself. */
-.adminHeroImageGroup .adminImagePreview,
-.adminLogoImageGroup .adminImagePreview {
-  display: block;
-  position: relative;
+/* ---------- Manual crop editor (logo / hero / product / category images) ---------- */
+
+.adminImageCropEditor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
   margin-top: 10px;
+}
+
+.adminCropFrame {
+  position: relative;
   overflow: hidden;
+  max-width: 100%;
   border-radius: 14px;
+  border: 2px dashed #b391c4;
+  background: #f7f3f9;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
 }
 
-.adminHeroImageGroup .adminImagePreview {
-  width: 100%;
-  max-width: 480px;
-  height: 170px;
+.adminCropFrame:active {
+  cursor: grabbing;
 }
 
-.adminLogoImageGroup .adminImagePreview {
-  width: 130px;
-  height: 130px;
-}
-
-.adminHeroImageGroup .adminCurrentProductImage,
-.adminHeroImageGroup .adminImagePlaceholder,
-.adminLogoImageGroup .adminCurrentProductImage,
-.adminLogoImageGroup .adminImagePlaceholder {
+.adminCropFrameImage {
+  display: block;
   width: 100%;
   height: 100%;
-  max-width: none;
-  border-radius: 0;
-  border: 0;
+  pointer-events: none;
 }
 
-.adminHeroImageGroup .adminCurrentProductImage {
-  object-fit: cover;
-}
-
-.adminLogoImageGroup .adminCurrentProductImage {
+.adminCropFrameEmpty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #9a86a3;
+  font-size: 12px;
+  text-align: center;
   padding: 8px;
 }
 
-.adminImageAdjustControls {
+.adminCropFrameHint {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(40, 16, 47, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.adminCropControls {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
+  min-width: 220px;
+  flex: 1;
   padding: 14px;
   border-radius: 12px;
   background: #f9f6fb;
   border: 1px solid #e4dbe9;
 }
 
-.adminImageAdjustControls label {
+.adminCropControls label {
   display: grid;
   gap: 6px;
   font-size: 13px;
@@ -916,7 +933,7 @@
   color: #43204d;
 }
 
-.adminImageAdjustControls input[type="range"] {
+.adminCropControls input[type="range"] {
   width: 100%;
   height: 6px;
   border-radius: 6px;
@@ -926,7 +943,7 @@
   accent-color: #6b317d;
 }
 
-.adminImageAdjustControls select {
+.adminCropControls select {
   padding: 10px 12px;
   border: 1px solid #d9cfe0;
   border-radius: 10px;
@@ -1142,9 +1159,12 @@
     width: 100%;
   }
 
-  .adminHeroImageGroup .adminImagePreview {
-    max-width: 100%;
-    height: 140px;
+  .adminImageCropEditor {
+    flex-direction: column;
+  }
+
+  .adminCropControls {
+    width: 100%;
   }
 
   .adminResetImageButton {
@@ -1571,6 +1591,141 @@
   cursor: not-allowed;
 }
 
+/* ---------- Weekly opening hours editor ---------- */
+
+.adminWeeklyHoursSection {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #e4dbe9;
+  border-radius: 14px;
+  background: #f9f6fb;
+}
+
+.adminWeeklyHoursSection h3 {
+  margin: 0 0 4px;
+}
+
+.adminWeeklyHoursSection > p {
+  margin: 0 0 16px;
+  color: #78667d;
+  font-size: 13px;
+}
+
+.adminWeeklyPresetsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.adminWeeklyPreset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 260px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4dbe9;
+}
+
+.adminWeeklyPreset span {
+  flex: 1 1 100%;
+  font-weight: 700;
+  color: #43204d;
+  font-size: 13px;
+}
+
+.adminWeeklyPreset input[type="time"] {
+  padding: 8px 10px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.adminWeeklyPreset button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: #542065;
+}
+
+.adminWeeklyHoursGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.adminWeeklyHoursRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4dbe9;
+}
+
+.adminWeeklyDayLabel {
+  min-width: 70px;
+  font-weight: 700;
+  color: #43204d;
+}
+
+.adminWeeklyHoursRow .productVisibleLabel {
+  min-width: 90px;
+}
+
+.adminWeeklyHoursRow input[type="time"] {
+  padding: 8px 10px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.adminWeeklyHoursRow input[type="time"]:disabled {
+  opacity: 0.5;
+}
+
+/* ---------- Homepage layout controls ---------- */
+
+.adminLayoutSection {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #e4dbe9;
+  border-radius: 14px;
+  background: #f9f6fb;
+  display: grid;
+  gap: 16px;
+}
+
+.adminLayoutSection .adminProductsHeader h3 {
+  margin: 0;
+}
+
+.adminLayoutSection > label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+  color: #43204d;
+}
+
+.adminLayoutSection input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  background: #e4dbe9;
+  outline: none;
+  cursor: pointer;
+  accent-color: #6b317d;
+}
+
 /* ---------- Mobile: refactor-added components ---------- */
 
 @media (max-width: 700px) {
@@ -1633,6 +1788,25 @@
 
   .adminOptionChoiceRow input,
   .adminOptionChoiceRow button {
+    width: 100%;
+  }
+
+  .adminWeeklyHoursRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminWeeklyHoursRow input[type="time"] {
+    width: 100%;
+  }
+
+  .adminWeeklyPreset {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminWeeklyPreset input[type="time"],
+  .adminWeeklyPreset button {
     width: 100%;
   }
 }

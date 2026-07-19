@@ -2,8 +2,10 @@ import { useCallback, useMemo, useState } from 'react'
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import {
+  convertGoogleDriveLink,
   createUniqueId,
   nextOrderValue,
+  normalizeImageCrop,
   pickNextCategoryColor,
   runChunkedBatch,
   validateOrderValue,
@@ -15,6 +17,8 @@ function normalizeCategory(raw) {
     visible: raw.visible !== false,
     icon: raw.icon || '',
     color: raw.color || '#582369',
+    imageUrl: raw.imageUrl || '',
+    imageCrop: normalizeImageCrop(raw.imageCrop),
   }
 }
 
@@ -77,6 +81,8 @@ export function useCategories() {
     categoryVisible,
     categoryIcon,
     categoryColor,
+    categoryImageUrl,
+    categoryImageCrop,
   }) {
     if (!categoryNameEn.trim()) throw new Error('اكتب اسم القسم بالإنجليزي')
     if (!categoryNameAr.trim()) throw new Error('اكتب اسم القسم بالعربي')
@@ -95,6 +101,8 @@ export function useCategories() {
       visible: categoryVisible,
       icon: categoryIcon || '',
       color: safeColor,
+      imageUrl: convertGoogleDriveLink((categoryImageUrl || '').trim()),
+      imageCrop: normalizeImageCrop(categoryImageCrop),
     }
 
     await setDoc(doc(db, 'categories', categoryId), data, { merge: true })

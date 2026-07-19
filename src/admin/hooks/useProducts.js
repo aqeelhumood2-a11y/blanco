@@ -14,6 +14,7 @@ import {
   createUniqueId,
   generateOptionId,
   nextOrderValue,
+  normalizeImageCrop,
   normalizePriceRule,
   normalizeSchedule,
   runChunkedBatch,
@@ -51,6 +52,9 @@ function normalizeProduct(raw) {
     priceSchedule: Array.isArray(raw.priceSchedule)
       ? raw.priceSchedule.map((rule, index) => normalizePriceRule(rule, index))
       : [],
+    // Missing on any product saved before per-image cropping existed —
+    // normalizes to the safe "uncropped" default.
+    imageCrop: normalizeImageCrop(raw.imageCrop),
   }
 }
 
@@ -65,6 +69,7 @@ function stripProductForFirestore(values) {
     order,
     visible,
     imageUrl,
+    imageCrop,
     status,
     availability,
     badges,
@@ -80,6 +85,7 @@ function stripProductForFirestore(values) {
     order,
     visible,
     imageUrl,
+    imageCrop: normalizeImageCrop(imageCrop),
     status,
     availability,
     badges,
@@ -164,6 +170,7 @@ export function useProducts() {
       productOrder,
       productVisible,
       productImageUrl,
+      productImageCrop,
       status,
       availability,
       badges,
@@ -204,6 +211,7 @@ export function useProducts() {
       order: Number(productOrder),
       visible: productVisible,
       imageUrl: finalImageUrl,
+      imageCrop: productImageCrop,
       status,
       availability,
       badges,

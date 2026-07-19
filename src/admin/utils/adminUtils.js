@@ -11,6 +11,10 @@ export const defaultSiteSettings = {
   footerText: 'BLANCO',
   currency: '',
   showPrices: true,
+  openingHoursLabelEn: 'Open Daily',
+  openingHoursLabelAr: 'مفتوح يوميًا',
+  contactHeadingEn: 'Contact Us',
+  contactHeadingAr: 'تواصل معنا',
 }
 
 export const defaultThemeSettings = {
@@ -37,11 +41,51 @@ export const defaultThemeSettings = {
   heroScale: 1,
   heroOffsetX: 50,
   heroOffsetY: 50,
+  heroCropRatio: 'wide',
   logoScale: 1,
   logoOffsetX: 50,
   logoOffsetY: 50,
   logoFit: 'contain',
+  // Additional colors
+  buttonTextColor: '#ffffff',
+  borderColor: '#e4dbe9',
+  menuBackgroundColor: '#f7f3f8',
+  footerTextColor: '#ffffff',
+  accentColor: '#582369',
+  // Layout controls
+  logoPosition: 'top-left',
+  logoSize: 90,
+  logoSpacingTop: 24,
+  logoSpacingSide: 24,
+  heroAlign: 'left',
+  heroPaddingScale: 1,
+  sectionSpacingScale: 1,
+  buttonSize: 'md',
+  textScale: 1,
 }
+
+export const logoPositionOptions = [
+  { value: 'top-left', label: 'أعلى اليسار' },
+  { value: 'top-center', label: 'أعلى الوسط' },
+  { value: 'top-right', label: 'أعلى اليمين' },
+]
+
+export const heroAlignOptions = [
+  { value: 'left', label: 'يسار' },
+  { value: 'center', label: 'وسط' },
+]
+
+export const buttonSizeOptions = [
+  { value: 'sm', label: 'صغير' },
+  { value: 'md', label: 'متوسط' },
+  { value: 'lg', label: 'كبير' },
+]
+
+export const heroCropRatioOptions = [
+  { value: 'wide', label: 'عريض (21:9)' },
+  { value: 'standard', label: 'قياسي (16:9)' },
+  { value: 'tall', label: 'طويل (3:4)' },
+]
 
 export const defaultContactSettings = {
   phone: '',
@@ -165,6 +209,126 @@ export function clampImageOffset(value) {
   const number = Number(value)
   if (Number.isNaN(number)) return 50
   return Math.min(100, Math.max(0, number))
+}
+
+// A crop is independent per image: every product, every category, the logo,
+// and the hero each store their own {scale, offsetX, offsetY} so adjusting
+// one image never touches another.
+export function defaultImageCrop() {
+  return { scale: 1, offsetX: 50, offsetY: 50 }
+}
+
+export function normalizeImageCrop(raw) {
+  return {
+    scale: clampImageScale(raw?.scale ?? 1),
+    offsetX: clampImageOffset(raw?.offsetX ?? 50),
+    offsetY: clampImageOffset(raw?.offsetY ?? 50),
+  }
+}
+
+export function imageCropToStyle(crop, fit = 'cover') {
+  const safe = normalizeImageCrop(crop)
+  return {
+    objectFit: fit,
+    objectPosition: `${safe.offsetX}% ${safe.offsetY}%`,
+    transform: `scale(${safe.scale})`,
+  }
+}
+
+// ---------- Layout controls ----------
+
+export function clampLogoSize(value) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return 90
+  return Math.min(200, Math.max(40, number))
+}
+
+export function clampSpacing(value, fallback = 24) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return fallback
+  return Math.min(120, Math.max(0, number))
+}
+
+export function clampScaleFactor(value, fallback = 1) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return fallback
+  return Math.min(1.6, Math.max(0.6, number))
+}
+
+export function clampTextScale(value) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return 1
+  return Math.min(1.15, Math.max(0.85, number))
+}
+
+// ---------- Weekly opening hours ----------
+
+export const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+export const dayLabels = {
+  sun: { en: 'Sunday', ar: 'الأحد' },
+  mon: { en: 'Monday', ar: 'الاثنين' },
+  tue: { en: 'Tuesday', ar: 'الثلاثاء' },
+  wed: { en: 'Wednesday', ar: 'الأربعاء' },
+  thu: { en: 'Thursday', ar: 'الخميس' },
+  fri: { en: 'Friday', ar: 'الجمعة' },
+  sat: { en: 'Saturday', ar: 'السبت' },
+}
+
+export function defaultWeeklyHours() {
+  const day = { closed: false, open: '08:00', close: '02:00' }
+  return {
+    sun: { ...day },
+    mon: { ...day },
+    tue: { ...day },
+    wed: { ...day },
+    thu: { ...day },
+    fri: { ...day },
+    sat: { ...day },
+  }
+}
+
+// Returns null when no weekly schedule has ever been configured, so callers
+// can fall back to the legacy free-text `workingHours` string — this is what
+// makes the feature backward compatible with records that predate it.
+export function normalizeWeeklyHours(raw) {
+  if (!raw || typeof raw !== 'object') return null
+
+  const base = defaultWeeklyHours()
+  const result = {}
+
+  for (const key of dayKeys) {
+    const day = raw[key]
+    result[key] = {
+      closed: Boolean(day?.closed),
+      open: day?.open || base[key].open,
+      close: day?.close || base[key].close,
+    }
+  }
+
+  return result
+}
+
+export function getTodayKey(now = new Date()) {
+  return dayKeys[now.getDay()]
+}
+
+export function formatDayHours(day) {
+  if (!day || day.closed) return null
+  return `${day.open} – ${day.close}`
+}
+
+export function validateWeeklyHours(weeklyHours) {
+  for (const key of dayKeys) {
+    const day = weeklyHours?.[key]
+    if (!day || day.closed) continue
+
+    if (!day.open || !day.close) {
+      return { valid: false, message: `أدخل وقت الفتح والإغلاق ليوم ${dayLabels[key].ar}` }
+    }
+  }
+
+  return { valid: true, message: '' }
 }
 
 export function validateImageLink(url) {

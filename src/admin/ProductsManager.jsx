@@ -18,6 +18,7 @@ import {
   availabilityOptions,
   badgeOptions,
   convertGoogleDriveLink,
+  defaultImageCrop,
   nextOrderValue,
 } from './utils/adminUtils.js'
 import ProductForm from './components/ProductForm.jsx'
@@ -170,6 +171,7 @@ function ProductsManager({ onBack, currency }) {
   const [productOrder, setProductOrder] = useState(1)
   const [productVisible, setProductVisible] = useState(true)
   const [productImageUrl, setProductImageUrl] = useState('')
+  const [productImageCrop, setProductImageCrop] = useState(defaultImageCrop())
   const [imgLoadError, setImgLoadError] = useState(false)
   const [status, setStatus] = useState('published')
   const [availability, setAvailability] = useState('available')
@@ -230,6 +232,7 @@ function ProductsManager({ onBack, currency }) {
     setProductOrder(nextOrderValue(siblingProducts))
     setProductVisible(true)
     setProductImageUrl('')
+    setProductImageCrop(defaultImageCrop())
     setImgLoadError(false)
     setStatus('published')
     setAvailability('available')
@@ -271,6 +274,7 @@ function ProductsManager({ onBack, currency }) {
     setProductOrder(product.order || 1)
     setProductVisible(product.visible !== false)
     setProductImageUrl(product.imageUrl || '')
+    setProductImageCrop(product.imageCrop || defaultImageCrop())
     setImgLoadError(false)
     setStatus(product.status || 'published')
     setAvailability(product.availability || 'available')
@@ -311,6 +315,7 @@ function ProductsManager({ onBack, currency }) {
         productOrder,
         productVisible,
         productImageUrl,
+        productImageCrop,
         status,
         availability,
         badges,
@@ -723,6 +728,8 @@ function ProductsManager({ onBack, currency }) {
           setProductVisible={setProductVisible}
           productImageUrl={productImageUrl}
           setProductImageUrl={setProductImageUrl}
+          productImageCrop={productImageCrop}
+          setProductImageCrop={setProductImageCrop}
           imgLoadError={imgLoadError}
           setImgLoadError={setImgLoadError}
           previewImageUrl={previewImageUrl}

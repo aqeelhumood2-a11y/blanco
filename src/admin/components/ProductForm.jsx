@@ -2,11 +2,13 @@ import {
   availabilityOptions,
   badgeOptions,
   daysOfWeekOptions,
+  defaultImageCrop,
   generateOptionId,
   optionTypeOptions,
   statusOptions,
   validateImageLink,
 } from '../utils/adminUtils.js'
+import ImageCropEditor from './ImageCropEditor.jsx'
 
 function ProductForm({
   formRef,
@@ -28,6 +30,8 @@ function ProductForm({
   imgLoadError,
   setImgLoadError,
   previewImageUrl,
+  productImageCrop,
+  setProductImageCrop,
   categories,
   savingProduct,
   status,
@@ -254,34 +258,31 @@ function ProductForm({
 
         {!imageValidation.valid && <p className="adminError">{imageValidation.message}</p>}
 
-        <div className="adminImagePreview">
-          {hasImage && !imgLoadError ? (
-            <img
-              className="adminCurrentProductImage"
-              src={previewImageUrl}
-              alt="معاينة الصورة"
-              loading="lazy"
-              onError={() => setImgLoadError(true)}
-            />
-          ) : hasImage && imgLoadError ? (
-            <div className="adminImagePlaceholder">تعذر تحميل الصورة</div>
-          ) : (
-            <div className="adminImagePlaceholder">لا توجد صورة</div>
-          )}
+        {hasImage && imgLoadError ? (
+          <p className="adminError">تعذر تحميل الصورة، تأكد من صحة الرابط</p>
+        ) : (
+          <ImageCropEditor
+            imageUrl={hasImage ? previewImageUrl : ''}
+            value={productImageCrop}
+            onChange={setProductImageCrop}
+            onReset={() => setProductImageCrop(defaultImageCrop())}
+            onImageError={() => setImgLoadError(true)}
+            shape="square"
+          />
+        )}
 
-          {productImageUrl.trim() && (
-            <button
-              type="button"
-              className="clearImageButton"
-              onClick={() => {
-                setProductImageUrl('')
-                setImgLoadError(false)
-              }}
-            >
-              إزالة الصورة
-            </button>
-          )}
-        </div>
+        {productImageUrl.trim() && (
+          <button
+            type="button"
+            className="clearImageButton"
+            onClick={() => {
+              setProductImageUrl('')
+              setImgLoadError(false)
+            }}
+          >
+            إزالة الصورة
+          </button>
+        )}
 
         <div className="adminBadgesSection">
           <h4>الشارات</h4>

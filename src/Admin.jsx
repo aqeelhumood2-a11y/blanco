@@ -13,19 +13,31 @@ import './Admin.css'
 
 import ProductsManager from './admin/ProductsManager.jsx'
 import CategoriesManager from './admin/CategoriesManager.jsx'
+import ImageCropEditor from './admin/components/ImageCropEditor.jsx'
 import {
   arabicFontOptions,
-  clampImageOffset,
-  clampImageScale,
+  buttonSizeOptions,
+  clampLogoSize,
+  clampScaleFactor,
+  clampSpacing,
+  clampTextScale,
   convertGoogleDriveLink,
   currencyOptions,
+  dayKeys,
+  dayLabels,
   defaultContactSettings,
+  defaultImageCrop,
   defaultSiteSettings,
   defaultThemeSettings,
+  defaultWeeklyHours,
   englishFontOptions,
-  IMAGE_SCALE_MAX,
-  IMAGE_SCALE_MIN,
+  heroAlignOptions,
+  heroCropRatioOptions,
+  logoPositionOptions,
+  normalizeImageCrop,
+  normalizeWeeklyHours,
   slugifyName,
+  validateWeeklyHours,
 } from './admin/utils/adminUtils.js'
 
 function Admin() {
@@ -61,6 +73,22 @@ function Admin() {
 
   const [currency, setCurrency] = useState('BD')
   const [showPrices, setShowPrices] = useState(true)
+
+  const [openingHoursLabelEn, setOpeningHoursLabelEn] = useState(
+    defaultSiteSettings.openingHoursLabelEn,
+  )
+  const [openingHoursLabelAr, setOpeningHoursLabelAr] = useState(
+    defaultSiteSettings.openingHoursLabelAr,
+  )
+  const [contactHeadingEn, setContactHeadingEn] = useState(
+    defaultSiteSettings.contactHeadingEn,
+  )
+  const [contactHeadingAr, setContactHeadingAr] = useState(
+    defaultSiteSettings.contactHeadingAr,
+  )
+  const [weeklyHours, setWeeklyHours] = useState(defaultWeeklyHours())
+  const [weekdayPreset, setWeekdayPreset] = useState({ open: '08:00', close: '02:00' })
+  const [weekendPreset, setWeekendPreset] = useState({ open: '08:00', close: '02:00' })
 
   const [savingSettings, setSavingSettings] = useState(false)
 
@@ -115,13 +143,30 @@ function Admin() {
   const [heroImageError, setHeroImageError] = useState(false)
   const [logoImageError, setLogoImageError] = useState(false)
 
-  const [heroScale, setHeroScale] = useState(defaultThemeSettings.heroScale)
-  const [heroOffsetX, setHeroOffsetX] = useState(defaultThemeSettings.heroOffsetX)
-  const [heroOffsetY, setHeroOffsetY] = useState(defaultThemeSettings.heroOffsetY)
-  const [logoScale, setLogoScale] = useState(defaultThemeSettings.logoScale)
-  const [logoOffsetX, setLogoOffsetX] = useState(defaultThemeSettings.logoOffsetX)
-  const [logoOffsetY, setLogoOffsetY] = useState(defaultThemeSettings.logoOffsetY)
+  const [heroCrop, setHeroCrop] = useState(defaultImageCrop())
+  const [heroCropRatio, setHeroCropRatio] = useState(defaultThemeSettings.heroCropRatio)
+  const [logoCrop, setLogoCrop] = useState(defaultImageCrop())
   const [logoFit, setLogoFit] = useState(defaultThemeSettings.logoFit)
+
+  const [buttonTextColor, setButtonTextColor] = useState(defaultThemeSettings.buttonTextColor)
+  const [borderColor, setBorderColor] = useState(defaultThemeSettings.borderColor)
+  const [menuBackgroundColor, setMenuBackgroundColor] = useState(
+    defaultThemeSettings.menuBackgroundColor,
+  )
+  const [footerTextColor, setFooterTextColor] = useState(defaultThemeSettings.footerTextColor)
+  const [accentColor, setAccentColor] = useState(defaultThemeSettings.accentColor)
+
+  const [logoPosition, setLogoPosition] = useState(defaultThemeSettings.logoPosition)
+  const [logoSize, setLogoSize] = useState(defaultThemeSettings.logoSize)
+  const [logoSpacingTop, setLogoSpacingTop] = useState(defaultThemeSettings.logoSpacingTop)
+  const [logoSpacingSide, setLogoSpacingSide] = useState(defaultThemeSettings.logoSpacingSide)
+  const [heroAlign, setHeroAlign] = useState(defaultThemeSettings.heroAlign)
+  const [heroPaddingScale, setHeroPaddingScale] = useState(defaultThemeSettings.heroPaddingScale)
+  const [sectionSpacingScale, setSectionSpacingScale] = useState(
+    defaultThemeSettings.sectionSpacingScale,
+  )
+  const [buttonSize, setButtonSize] = useState(defaultThemeSettings.buttonSize)
+  const [textScale, setTextScale] = useState(defaultThemeSettings.textScale)
 
   const [contactLoading, setContactLoading] = useState(false)
   const [contactMessage, setContactMessage] = useState('')
@@ -282,6 +327,19 @@ function Admin() {
           ? data.showPrices
           : defaultSiteSettings.showPrices,
       )
+      setOpeningHoursLabelEn(
+        data.openingHoursLabelEn ?? defaultSiteSettings.openingHoursLabelEn,
+      )
+      setOpeningHoursLabelAr(
+        data.openingHoursLabelAr ?? defaultSiteSettings.openingHoursLabelAr,
+      )
+      setContactHeadingEn(
+        data.contactHeadingEn ?? defaultSiteSettings.contactHeadingEn,
+      )
+      setContactHeadingAr(
+        data.contactHeadingAr ?? defaultSiteSettings.contactHeadingAr,
+      )
+      setWeeklyHours(normalizeWeeklyHours(data.weeklyHours) ?? defaultWeeklyHours())
     } catch (settingsError) {
       console.error(settingsError)
       setError('تعذر تحميل إعدادات الموقع')
@@ -299,6 +357,15 @@ function Admin() {
     setError('')
     setSettingsMessage('')
 
+    const hoursCheck = validateWeeklyHours(weeklyHours)
+
+    if (!hoursCheck.valid) {
+      setError(hoursCheck.message)
+      savingSettingsLock.current = false
+      setSavingSettings(false)
+      return
+    }
+
     try {
       await setDoc(
         doc(db, 'siteSettings', 'main'),
@@ -313,6 +380,11 @@ function Admin() {
           footerText: footerText.trim(),
           currency,
           showPrices,
+          openingHoursLabelEn: openingHoursLabelEn.trim(),
+          openingHoursLabelAr: openingHoursLabelAr.trim(),
+          contactHeadingEn: contactHeadingEn.trim(),
+          contactHeadingAr: contactHeadingAr.trim(),
+          weeklyHours,
         },
         { merge: true },
       )
@@ -388,13 +460,40 @@ function Admin() {
           ? data.heroOverlayOpacity
           : defaultThemeSettings.heroOverlayOpacity,
       )
-      setHeroScale(clampImageScale(data.heroScale ?? defaultThemeSettings.heroScale))
-      setHeroOffsetX(clampImageOffset(data.heroOffsetX ?? defaultThemeSettings.heroOffsetX))
-      setHeroOffsetY(clampImageOffset(data.heroOffsetY ?? defaultThemeSettings.heroOffsetY))
-      setLogoScale(clampImageScale(data.logoScale ?? defaultThemeSettings.logoScale))
-      setLogoOffsetX(clampImageOffset(data.logoOffsetX ?? defaultThemeSettings.logoOffsetX))
-      setLogoOffsetY(clampImageOffset(data.logoOffsetY ?? defaultThemeSettings.logoOffsetY))
+      setHeroCrop(
+        normalizeImageCrop({
+          scale: data.heroScale ?? defaultThemeSettings.heroScale,
+          offsetX: data.heroOffsetX ?? defaultThemeSettings.heroOffsetX,
+          offsetY: data.heroOffsetY ?? defaultThemeSettings.heroOffsetY,
+        }),
+      )
+      setHeroCropRatio(data.heroCropRatio || defaultThemeSettings.heroCropRatio)
+      setLogoCrop(
+        normalizeImageCrop({
+          scale: data.logoScale ?? defaultThemeSettings.logoScale,
+          offsetX: data.logoOffsetX ?? defaultThemeSettings.logoOffsetX,
+          offsetY: data.logoOffsetY ?? defaultThemeSettings.logoOffsetY,
+        }),
+      )
       setLogoFit(data.logoFit === 'cover' ? 'cover' : defaultThemeSettings.logoFit)
+      setButtonTextColor(data.buttonTextColor ?? defaultThemeSettings.buttonTextColor)
+      setBorderColor(data.borderColor ?? defaultThemeSettings.borderColor)
+      setMenuBackgroundColor(data.menuBackgroundColor ?? defaultThemeSettings.menuBackgroundColor)
+      setFooterTextColor(data.footerTextColor ?? defaultThemeSettings.footerTextColor)
+      setAccentColor(data.accentColor ?? defaultThemeSettings.accentColor)
+      setLogoPosition(data.logoPosition || defaultThemeSettings.logoPosition)
+      setLogoSize(clampLogoSize(data.logoSize ?? defaultThemeSettings.logoSize))
+      setLogoSpacingTop(clampSpacing(data.logoSpacingTop ?? defaultThemeSettings.logoSpacingTop))
+      setLogoSpacingSide(clampSpacing(data.logoSpacingSide ?? defaultThemeSettings.logoSpacingSide))
+      setHeroAlign(data.heroAlign || defaultThemeSettings.heroAlign)
+      setHeroPaddingScale(
+        clampScaleFactor(data.heroPaddingScale ?? defaultThemeSettings.heroPaddingScale),
+      )
+      setSectionSpacingScale(
+        clampScaleFactor(data.sectionSpacingScale ?? defaultThemeSettings.sectionSpacingScale),
+      )
+      setButtonSize(data.buttonSize || defaultThemeSettings.buttonSize)
+      setTextScale(clampTextScale(data.textScale ?? defaultThemeSettings.textScale))
       setHeroImageError(false)
       setLogoImageError(false)
     } catch (themeError) {
@@ -439,13 +538,28 @@ function Admin() {
           arabicFont,
           englishFont,
           heroOverlayOpacity: Number(heroOverlayOpacity),
-          heroScale: clampImageScale(heroScale),
-          heroOffsetX: clampImageOffset(heroOffsetX),
-          heroOffsetY: clampImageOffset(heroOffsetY),
-          logoScale: clampImageScale(logoScale),
-          logoOffsetX: clampImageOffset(logoOffsetX),
-          logoOffsetY: clampImageOffset(logoOffsetY),
+          heroScale: heroCrop.scale,
+          heroOffsetX: heroCrop.offsetX,
+          heroOffsetY: heroCrop.offsetY,
+          heroCropRatio,
+          logoScale: logoCrop.scale,
+          logoOffsetX: logoCrop.offsetX,
+          logoOffsetY: logoCrop.offsetY,
           logoFit,
+          buttonTextColor,
+          borderColor,
+          menuBackgroundColor,
+          footerTextColor,
+          accentColor,
+          logoPosition,
+          logoSize: clampLogoSize(logoSize),
+          logoSpacingTop: clampSpacing(logoSpacingTop),
+          logoSpacingSide: clampSpacing(logoSpacingSide),
+          heroAlign,
+          heroPaddingScale: clampScaleFactor(heroPaddingScale),
+          sectionSpacingScale: clampScaleFactor(sectionSpacingScale),
+          buttonSize,
+          textScale: clampTextScale(textScale),
         },
         { merge: true },
       )
@@ -464,16 +578,52 @@ function Admin() {
   }
 
   function resetHeroImageAdjustment() {
-    setHeroScale(defaultThemeSettings.heroScale)
-    setHeroOffsetX(defaultThemeSettings.heroOffsetX)
-    setHeroOffsetY(defaultThemeSettings.heroOffsetY)
+    setHeroCrop(defaultImageCrop())
+    setHeroCropRatio(defaultThemeSettings.heroCropRatio)
   }
 
   function resetLogoImageAdjustment() {
-    setLogoScale(defaultThemeSettings.logoScale)
-    setLogoOffsetX(defaultThemeSettings.logoOffsetX)
-    setLogoOffsetY(defaultThemeSettings.logoOffsetY)
+    setLogoCrop(defaultImageCrop())
     setLogoFit(defaultThemeSettings.logoFit)
+  }
+
+  function resetLayoutSettings() {
+    setLogoPosition(defaultThemeSettings.logoPosition)
+    setLogoSize(defaultThemeSettings.logoSize)
+    setLogoSpacingTop(defaultThemeSettings.logoSpacingTop)
+    setLogoSpacingSide(defaultThemeSettings.logoSpacingSide)
+    setHeroAlign(defaultThemeSettings.heroAlign)
+    setHeroPaddingScale(defaultThemeSettings.heroPaddingScale)
+    setSectionSpacingScale(defaultThemeSettings.sectionSpacingScale)
+    setButtonSize(defaultThemeSettings.buttonSize)
+    setTextScale(defaultThemeSettings.textScale)
+  }
+
+  // Weekdays = Sun–Thu, Weekend = Fri–Sat, matching the Gulf work week (this
+  // site's default currency/content is Bahrain-oriented) rather than the
+  // Mon–Fri/Sat–Sun convention.
+  function applyWeekdayPreset() {
+    setWeeklyHours((prev) => {
+      const next = { ...prev }
+      for (const key of ['sun', 'mon', 'tue', 'wed', 'thu']) {
+        next[key] = { closed: false, open: weekdayPreset.open, close: weekdayPreset.close }
+      }
+      return next
+    })
+  }
+
+  function applyWeekendPreset() {
+    setWeeklyHours((prev) => {
+      const next = { ...prev }
+      for (const key of ['fri', 'sat']) {
+        next[key] = { closed: false, open: weekendPreset.open, close: weekendPreset.close }
+      }
+      return next
+    })
+  }
+
+  function updateDayHours(key, patch) {
+    setWeeklyHours((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }
 
   async function loadContactSettings() {
@@ -1055,6 +1205,128 @@ function Admin() {
 
                   إظهار الأسعار في المنيو
                 </label>
+
+                <label>
+                  نص "مفتوح" بالإنجليزي
+
+                  <input
+                    type="text"
+                    value={openingHoursLabelEn}
+                    onChange={(event) => setOpeningHoursLabelEn(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  نص "مفتوح" بالعربي
+
+                  <input
+                    type="text"
+                    value={openingHoursLabelAr}
+                    onChange={(event) => setOpeningHoursLabelAr(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  عنوان قسم التواصل بالإنجليزي
+
+                  <input
+                    type="text"
+                    value={contactHeadingEn}
+                    onChange={(event) => setContactHeadingEn(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  عنوان قسم التواصل بالعربي
+
+                  <input
+                    type="text"
+                    value={contactHeadingAr}
+                    onChange={(event) => setContactHeadingAr(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="adminWeeklyHoursSection">
+                <h3>ساعات العمل الأسبوعية</h3>
+                <p>حدد وقت الفتح والإغلاق لكل يوم، أو أغلق اليوم بالكامل. سيعرض الموقع تلقائيًا ساعات اليوم الحالي.</p>
+
+                <div className="adminWeeklyPresetsRow">
+                  <div className="adminWeeklyPreset">
+                    <span>أيام الأسبوع (الأحد - الخميس)</span>
+                    <input
+                      type="time"
+                      value={weekdayPreset.open}
+                      onChange={(event) =>
+                        setWeekdayPreset((prev) => ({ ...prev, open: event.target.value }))
+                      }
+                    />
+                    <input
+                      type="time"
+                      value={weekdayPreset.close}
+                      onChange={(event) =>
+                        setWeekdayPreset((prev) => ({ ...prev, close: event.target.value }))
+                      }
+                    />
+                    <button type="button" onClick={applyWeekdayPreset}>
+                      تطبيق على أيام الأسبوع
+                    </button>
+                  </div>
+
+                  <div className="adminWeeklyPreset">
+                    <span>نهاية الأسبوع (الجمعة - السبت)</span>
+                    <input
+                      type="time"
+                      value={weekendPreset.open}
+                      onChange={(event) =>
+                        setWeekendPreset((prev) => ({ ...prev, open: event.target.value }))
+                      }
+                    />
+                    <input
+                      type="time"
+                      value={weekendPreset.close}
+                      onChange={(event) =>
+                        setWeekendPreset((prev) => ({ ...prev, close: event.target.value }))
+                      }
+                    />
+                    <button type="button" onClick={applyWeekendPreset}>
+                      تطبيق على نهاية الأسبوع
+                    </button>
+                  </div>
+                </div>
+
+                <div className="adminWeeklyHoursGrid">
+                  {dayKeys.map((key) => (
+                    <div className="adminWeeklyHoursRow" key={key}>
+                      <span className="adminWeeklyDayLabel">{dayLabels[key].ar}</span>
+
+                      <label className="productVisibleLabel">
+                        <input
+                          type="checkbox"
+                          checked={!weeklyHours[key].closed}
+                          onChange={(event) =>
+                            updateDayHours(key, { closed: !event.target.checked })
+                          }
+                        />
+                        مفتوح
+                      </label>
+
+                      <input
+                        type="time"
+                        value={weeklyHours[key].open}
+                        disabled={weeklyHours[key].closed}
+                        onChange={(event) => updateDayHours(key, { open: event.target.value })}
+                      />
+
+                      <input
+                        type="time"
+                        value={weeklyHours[key].close}
+                        disabled={weeklyHours[key].closed}
+                        onChange={(event) => updateDayHours(key, { close: event.target.value })}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {settingsMessage && (
@@ -1125,73 +1397,29 @@ function Admin() {
                   />
                 </label>
 
-                <div className="adminImagePreview">
-                  {heroPreviewUrl && !heroImageError ? (
-                    <img
-                      className="adminCurrentProductImage"
-                      src={heroPreviewUrl}
-                      alt="معاينة خلفية الهيدر"
-                      style={{
-                        objectFit: 'cover',
-                        transform: `scale(${clampImageScale(heroScale)})`,
-                        transformOrigin: `${clampImageOffset(heroOffsetX)}% ${clampImageOffset(heroOffsetY)}%`,
-                      }}
-                      onError={() => setHeroImageError(true)}
-                    />
-                  ) : (
-                    <div className="adminImagePlaceholder">
-                      لا توجد خلفية
-                    </div>
-                  )}
-                </div>
-
                 {heroPreviewUrl && (
-                  <div className="adminImageAdjustControls">
-                    <label>
-                      التكبير: {clampImageScale(heroScale).toFixed(2)}×
-                      <input
-                        type="range"
-                        min={IMAGE_SCALE_MIN}
-                        max={IMAGE_SCALE_MAX}
-                        step="0.05"
-                        value={heroScale}
-                        onChange={(event) => setHeroScale(event.target.value)}
-                      />
-                    </label>
-
-                    <label>
-                      الموضع الأفقي: {clampImageOffset(heroOffsetX)}%
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={heroOffsetX}
-                        onChange={(event) => setHeroOffsetX(event.target.value)}
-                      />
-                    </label>
-
-                    <label>
-                      الموضع الرأسي: {clampImageOffset(heroOffsetY)}%
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={heroOffsetY}
-                        onChange={(event) => setHeroOffsetY(event.target.value)}
-                      />
-                    </label>
-
-                    <button
-                      type="button"
-                      className="adminResetImageButton"
-                      onClick={resetHeroImageAdjustment}
-                    >
-                      إعادة ضبط الصورة
-                    </button>
-                  </div>
+                  <label>
+                    نسبة إطار المعاينة
+                    <select value={heroCropRatio} onChange={(event) => setHeroCropRatio(event.target.value)}>
+                      {heroCropRatioOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 )}
+
+                <ImageCropEditor
+                  imageUrl={heroImageError ? '' : heroPreviewUrl}
+                  value={heroCrop}
+                  onChange={setHeroCrop}
+                  onReset={resetHeroImageAdjustment}
+                  onImageError={() => setHeroImageError(true)}
+                  shape={heroCropRatio}
+                  emptyLabel="لا توجد خلفية"
+                />
+                {heroImageError && <p className="adminError">تعذر تحميل الصورة، تأكد من صحة الرابط</p>}
               </div>
 
               <div className="adminImageAdjustGroup adminLogoImageGroup">
@@ -1209,84 +1437,18 @@ function Admin() {
                   />
                 </label>
 
-                <div className="adminImagePreview">
-                  {logoPreviewUrl && !logoImageError ? (
-                    <img
-                      className="adminCurrentProductImage"
-                      src={logoPreviewUrl}
-                      alt="معاينة الشعار"
-                      style={{
-                        objectFit: logoFit === 'cover' ? 'cover' : 'contain',
-                        objectPosition: `${clampImageOffset(logoOffsetX)}% ${clampImageOffset(logoOffsetY)}%`,
-                        transform: `scale(${clampImageScale(logoScale)})`,
-                      }}
-                      onError={() => setLogoImageError(true)}
-                    />
-                  ) : (
-                    <div className="adminImagePlaceholder">
-                      لا يوجد شعار
-                    </div>
-                  )}
-                </div>
-
-                {logoPreviewUrl && (
-                  <div className="adminImageAdjustControls">
-                    <label>
-                      طريقة العرض
-                      <select
-                        value={logoFit}
-                        onChange={(event) => setLogoFit(event.target.value)}
-                      >
-                        <option value="contain">احتواء كامل (بدون قص)</option>
-                        <option value="cover">تعبئة الإطار (قص عند الحاجة)</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      التكبير: {clampImageScale(logoScale).toFixed(2)}×
-                      <input
-                        type="range"
-                        min={IMAGE_SCALE_MIN}
-                        max={IMAGE_SCALE_MAX}
-                        step="0.05"
-                        value={logoScale}
-                        onChange={(event) => setLogoScale(event.target.value)}
-                      />
-                    </label>
-
-                    <label>
-                      الموضع الأفقي: {clampImageOffset(logoOffsetX)}%
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={logoOffsetX}
-                        onChange={(event) => setLogoOffsetX(event.target.value)}
-                      />
-                    </label>
-
-                    <label>
-                      الموضع الرأسي: {clampImageOffset(logoOffsetY)}%
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={logoOffsetY}
-                        onChange={(event) => setLogoOffsetY(event.target.value)}
-                      />
-                    </label>
-
-                    <button
-                      type="button"
-                      className="adminResetImageButton"
-                      onClick={resetLogoImageAdjustment}
-                    >
-                      إعادة ضبط الصورة
-                    </button>
-                  </div>
-                )}
+                <ImageCropEditor
+                  imageUrl={logoImageError ? '' : logoPreviewUrl}
+                  value={logoCrop}
+                  onChange={setLogoCrop}
+                  onReset={resetLogoImageAdjustment}
+                  onImageError={() => setLogoImageError(true)}
+                  fit={logoFit}
+                  onFitChange={setLogoFit}
+                  shape="square"
+                  emptyLabel="لا يوجد شعار"
+                />
+                {logoImageError && <p className="adminError">تعذر تحميل الصورة، تأكد من صحة الرابط</p>}
               </div>
 
               <div className="adminSiteSettingsGrid">
@@ -1457,6 +1619,71 @@ function Admin() {
                 </label>
 
                 <label>
+                  لون نص الأزرار
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={buttonTextColor}
+                      onChange={(event) => setButtonTextColor(event.target.value)}
+                    />
+                    <span>{buttonTextColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون الحدود
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={borderColor}
+                      onChange={(event) => setBorderColor(event.target.value)}
+                    />
+                    <span>{borderColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون خلفية قسم المنيو
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={menuBackgroundColor}
+                      onChange={(event) => setMenuBackgroundColor(event.target.value)}
+                    />
+                    <span>{menuBackgroundColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  لون نص الفوتر
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={footerTextColor}
+                      onChange={(event) => setFooterTextColor(event.target.value)}
+                    />
+                    <span>{footerTextColor}</span>
+                  </div>
+                </label>
+
+                <label>
+                  اللون المميز (Accent)
+
+                  <div className="adminColorInputRow">
+                    <input
+                      type="color"
+                      value={accentColor}
+                      onChange={(event) => setAccentColor(event.target.value)}
+                    />
+                    <span>{accentColor}</span>
+                  </div>
+                </label>
+
+                <label>
                   الخط العربي
 
                   <select
@@ -1505,6 +1732,125 @@ function Admin() {
                   }
                 />
               </label>
+
+              <div className="adminLayoutSection">
+                <div className="adminProductsHeader">
+                  <h3>تخطيط الصفحة الرئيسية</h3>
+                  <button type="button" className="adminResetImageButton" onClick={resetLayoutSettings}>
+                    إعادة ضبط التخطيط
+                  </button>
+                </div>
+
+                <div className="adminSiteSettingsGrid">
+                  <label>
+                    موضع الشعار
+
+                    <select value={logoPosition} onChange={(event) => setLogoPosition(event.target.value)}>
+                      {logoPositionOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    محاذاة محتوى الهيدر
+
+                    <select value={heroAlign} onChange={(event) => setHeroAlign(event.target.value)}>
+                      {heroAlignOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    حجم الأزرار
+
+                    <select value={buttonSize} onChange={(event) => setButtonSize(event.target.value)}>
+                      {buttonSizeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <label>
+                  حجم الشعار: {logoSize}px
+                  <input
+                    type="range"
+                    min="40"
+                    max="200"
+                    step="2"
+                    value={logoSize}
+                    onChange={(event) => setLogoSize(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  المسافة العلوية للشعار: {logoSpacingTop}px
+                  <input
+                    type="range"
+                    min="0"
+                    max="120"
+                    step="2"
+                    value={logoSpacingTop}
+                    onChange={(event) => setLogoSpacingTop(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  المسافة الجانبية للشعار: {logoSpacingSide}px
+                  <input
+                    type="range"
+                    min="0"
+                    max="120"
+                    step="2"
+                    value={logoSpacingSide}
+                    onChange={(event) => setLogoSpacingSide(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  تباعد الهيدر الرأسي: {Math.round(heroPaddingScale * 100)}%
+                  <input
+                    type="range"
+                    min="0.6"
+                    max="1.6"
+                    step="0.05"
+                    value={heroPaddingScale}
+                    onChange={(event) => setHeroPaddingScale(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  تباعد الأقسام: {Math.round(sectionSpacingScale * 100)}%
+                  <input
+                    type="range"
+                    min="0.6"
+                    max="1.6"
+                    step="0.05"
+                    value={sectionSpacingScale}
+                    onChange={(event) => setSectionSpacingScale(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  حجم النصوص: {Math.round(textScale * 100)}%
+                  <input
+                    type="range"
+                    min="0.85"
+                    max="1.15"
+                    step="0.01"
+                    value={textScale}
+                    onChange={(event) => setTextScale(event.target.value)}
+                  />
+                </label>
+              </div>
 
               {themeMessage && (
                 <p className="uploadSuccess">
