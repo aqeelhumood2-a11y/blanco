@@ -14,7 +14,12 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useCategories } from './hooks/useCategories.js'
-import { nextOrderValue, pickNextCategoryColor } from './utils/adminUtils.js'
+import {
+  convertGoogleDriveLink,
+  defaultImageCrop,
+  nextOrderValue,
+  pickNextCategoryColor,
+} from './utils/adminUtils.js'
 import CategoryForm from './components/CategoryForm.jsx'
 
 function SortableCategoryCard({
@@ -93,7 +98,7 @@ function SortableCategoryCard({
   )
 }
 
-function CategoriesManager({ onBack }) {
+function CategoriesManager({ onBack, branchId }) {
   const {
     categories,
     loadingProducts,
@@ -107,7 +112,7 @@ function CategoriesManager({ onBack }) {
     reorderCategories,
     moveProductsToCategory,
     productCountByCategory,
-  } = useCategories()
+  } = useCategories(branchId)
 
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -118,6 +123,9 @@ function CategoriesManager({ onBack }) {
   const [categoryVisible, setCategoryVisible] = useState(true)
   const [categoryIcon, setCategoryIcon] = useState('')
   const [categoryColor, setCategoryColor] = useState('#582369')
+  const [categoryImageUrl, setCategoryImageUrl] = useState('')
+  const [categoryImageCrop, setCategoryImageCrop] = useState(defaultImageCrop())
+  const [categoryImageError, setCategoryImageError] = useState(false)
   const [savingCategory, setSavingCategory] = useState(false)
   const [categorySuccessMessage, setCategorySuccessMessage] = useState('')
 
@@ -136,8 +144,7 @@ function CategoriesManager({ onBack }) {
 
   useEffect(() => {
     loadCategories()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loadCategories])
 
   useEffect(() => {
     if (showCategoryForm && categoryFormRef.current) {
@@ -153,6 +160,9 @@ function CategoriesManager({ onBack }) {
     setCategoryVisible(true)
     setCategoryIcon('')
     setCategoryColor(pickNextCategoryColor(categories))
+    setCategoryImageUrl('')
+    setCategoryImageCrop(defaultImageCrop())
+    setCategoryImageError(false)
   }
 
   function openNewCategory() {
@@ -170,6 +180,9 @@ function CategoriesManager({ onBack }) {
     setCategoryVisible(category.visible !== false)
     setCategoryIcon(category.icon || '')
     setCategoryColor(category.color || pickNextCategoryColor(categories))
+    setCategoryImageUrl(category.imageUrl || '')
+    setCategoryImageCrop(category.imageCrop || defaultImageCrop())
+    setCategoryImageError(false)
     setShowCategoryForm(true)
     setError('')
     setCategorySuccessMessage('')
@@ -193,6 +206,8 @@ function CategoriesManager({ onBack }) {
         categoryVisible,
         categoryIcon,
         categoryColor,
+        categoryImageUrl,
+        categoryImageCrop,
       })
 
       setShowCategoryForm(false)
@@ -331,6 +346,13 @@ function CategoriesManager({ onBack }) {
           setCategoryIcon={setCategoryIcon}
           categoryColor={categoryColor}
           setCategoryColor={setCategoryColor}
+          categoryImageUrl={categoryImageUrl}
+          setCategoryImageUrl={setCategoryImageUrl}
+          categoryImageCrop={categoryImageCrop}
+          setCategoryImageCrop={setCategoryImageCrop}
+          categoryImagePreviewUrl={convertGoogleDriveLink(categoryImageUrl.trim())}
+          categoryImageError={categoryImageError}
+          setCategoryImageError={setCategoryImageError}
           savingCategory={savingCategory}
           onSubmit={handleSaveCategory}
           onCancel={() => {

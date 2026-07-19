@@ -1,5 +1,8 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&family=Almarai:wght@400;700;800&display=swap');
+/* Fonts are loaded from index.html via <link rel="preconnect"> + a normal
+   stylesheet <link> instead of an in-CSS @import — @import blocks this
+   entire stylesheet from being usable until the imported one finishes
+   fetching, serializing what could otherwise load in parallel. */
 
 * {
   box-sizing: border-box;
@@ -18,8 +21,8 @@
   min-height: 100vh;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 55px 22px;
+  justify-content: var(--hero-justify, center);
+  padding: calc(55px * var(--hero-padding-scale, 1)) 22px;
   overflow: hidden;
 }
 
@@ -46,21 +49,30 @@
   color: #ffffff;
 }
 
+.heroContent--left {
+  text-align: left;
+}
+
+.heroContent--left .workingHours,
+.heroContent--left .downArrow {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Positioned independently of .heroContent so it never stacks above the
+   BLANCO heading — top/left/right/width/height/transform come from the
+   admin's logo position + size + spacing + crop settings via inline style. */
 .heroLogo {
+  position: absolute;
+  z-index: 3;
   display: block;
-  max-width: 180px;
-  max-height: 150px;
-  width: auto;
-  height: auto;
-  margin: 0 auto 20px;
-  object-fit: contain;
   filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
 }
 
 .brandName {
   margin: 0;
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: clamp(46px, 9vw, 88px);
+  font-size: calc(clamp(46px, 9vw, 88px) * var(--text-scale, 1));
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: 4px;
@@ -82,14 +94,14 @@
 .welcome h2 {
   margin: 0;
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: clamp(22px, 3.6vw, 34px);
+  font-size: calc(clamp(22px, 3.6vw, 34px) * var(--text-scale, 1));
   font-weight: 600;
 }
 
 .welcome h3 {
   margin: 9px 0 0;
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
-  font-size: clamp(21px, 3.4vw, 31px);
+  font-size: calc(clamp(21px, 3.4vw, 31px) * var(--text-scale, 1));
   font-weight: 600;
 }
 
@@ -99,7 +111,7 @@
 
 .description p {
   margin: 6px 0;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   line-height: 1.8;
   opacity: 0.9;
   font-family: var(--english-font, 'Montserrat'), sans-serif;
@@ -107,7 +119,7 @@
 
 .description p:last-child {
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale, 1));
 }
 
 .workingHours {
@@ -132,6 +144,13 @@
 .workingHours strong {
   font-size: 19px;
   letter-spacing: 1px;
+}
+
+.workingHoursClosed {
+  font-family: var(--arabic-font, 'Cairo'), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffb4b4;
 }
 
 .downArrow {
@@ -246,10 +265,44 @@
 .menuArea {
   width: min(1200px, calc(100% - 34px));
   margin: auto;
+  background: var(--menu-background, transparent);
+}
+
+.menuStatusMessage {
+  text-align: center;
+  padding: 25px;
+  margin: 0;
+  color: var(--muted-text-color, #77637d);
+}
+
+.menuStatusError {
+  color: #a01616;
+}
+
+.menuEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 70px 20px;
+  color: var(--muted-text-color, #77637d);
+  text-align: center;
+}
+
+.menuEmptyState svg {
+  width: 46px;
+  height: 46px;
+  opacity: 0.5;
+}
+
+.menuEmptyState p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .menuSection {
-  padding: 95px 0 20px;
+  padding: calc(95px * var(--section-spacing-scale, 1)) 0 20px;
   scroll-margin-top: 75px;
 }
 
@@ -267,11 +320,21 @@
   letter-spacing: 1px;
 }
 
+.categoryImage {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  object-fit: cover;
+  border: 1px solid var(--border-color, #e4dbe9);
+}
+
 .menuSectionHeader h2 {
   margin: 0;
   color: var(--heading-color, #35123f);
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: clamp(31px, 5vw, 50px);
+  font-size: calc(clamp(31px, 5vw, 50px) * var(--text-scale, 1));
   font-weight: 800;
   letter-spacing: 2px;
   line-height: 1;
@@ -281,7 +344,7 @@
   margin: 8px 0 0;
   color: var(--muted-text-color, #755f7d);
   font-family: var(--arabic-font, 'Cairo'), sans-serif;
-  font-size: 19px;
+  font-size: calc(19px * var(--text-scale, 1));
   font-weight: 600;
   direction: rtl;
   text-align: left;
@@ -296,7 +359,7 @@
 .productCard {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid rgba(62, 24, 76, 0.08);
+  border: 1px solid var(--border-color, #e4dbe9);
   border-radius: 21px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 15px 40px rgba(47, 14, 59, 0.08);
@@ -319,9 +382,12 @@
     var(--primary-color, #653578) 45%,
     var(--heading-color, #35133f) 100%
   );
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 3px;
+}
+
+.productImagePlaceholder svg {
+  width: 34%;
+  height: 34%;
+  opacity: 0.7;
 }
 
 .productImage.hasImage {
@@ -350,7 +416,7 @@
   margin: 0;
   color: var(--heading-color, #2c1035);
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
   line-height: 1.35;
   overflow-wrap: break-word;
@@ -407,7 +473,7 @@
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--primary-color, #582369);
+  background: var(--accent-color, #582369);
   color: #ffffff;
   font-family: var(--english-font, 'Montserrat'), sans-serif;
   font-size: 10px;
@@ -423,12 +489,12 @@
 
 .contactSection {
   width: min(1200px, calc(100% - 34px));
-  margin: 90px auto 0;
+  margin: calc(90px * var(--section-spacing-scale, 1)) auto 0;
   padding: 45px 24px;
   text-align: center;
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(62, 24, 76, 0.08);
+  border: 1px solid var(--border-color, #e4dbe9);
   box-shadow: 0 15px 40px rgba(47, 14, 59, 0.06);
 }
 
@@ -436,9 +502,37 @@
   margin: 0 0 26px;
   color: var(--heading-color, #35123f);
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: clamp(24px, 4vw, 36px);
+  font-size: calc(clamp(24px, 4vw, 36px) * var(--text-scale, 1));
   font-weight: 800;
   letter-spacing: 1.5px;
+}
+
+.weeklyScheduleList {
+  list-style: none;
+  margin: 0 0 30px;
+  padding: 0;
+  width: min(420px, 100%);
+  margin-inline: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.weeklyScheduleList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-color, #26132e);
+  font-family: var(--arabic-font, 'Cairo'), sans-serif;
+  font-size: 14px;
+}
+
+.weeklyScheduleToday {
+  background: var(--primary-color, #582369) !important;
+  color: #ffffff !important;
+  font-weight: 700;
 }
 
 .contactLinks {
@@ -458,12 +552,12 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: var(--button-padding, 12px 24px);
   border-radius: 50px;
-  color: #ffffff;
+  color: var(--button-text-color, #ffffff);
   background: var(--button-color, #542065);
   font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: 14px;
+  font-size: var(--button-font-size, 14px);
   font-weight: 600;
   letter-spacing: 0.5px;
   text-decoration: none;
@@ -485,10 +579,10 @@
 }
 
 .footer {
-  margin-top: 100px;
+  margin-top: calc(100px * var(--section-spacing-scale, 1));
   padding: 45px 20px;
   text-align: center;
-  color: #ffffff;
+  color: var(--footer-text-color, #ffffff);
   background: var(--footer-background, #28102f);
 }
 
@@ -616,9 +710,8 @@
   }
 
   .heroLogo {
-    max-width: 120px;
-    max-height: 100px;
-    margin-bottom: 14px;
+    max-width: 90px;
+    max-height: 90px;
   }
 
   .brandName {
@@ -731,5 +824,129 @@
 
   .downArrow {
     animation: none;
+  }
+}
+
+.branchNotice {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 32px;
+  background-color: #28102f;
+  color: #f5eef8;
+}
+
+.branchNotice h1 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.branchNotice p {
+  font-size: 15px;
+  opacity: 0.85;
+  margin: 0;
+  max-width: 420px;
+}
+
+.pageLoadingSpinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(245, 238, 248, 0.25);
+  border-top-color: #f5eef8;
+  animation: pageLoadingSpin 0.8s linear infinite;
+}
+
+@keyframes pageLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageLoadingSpinner {
+    animation: none;
+  }
+}
+
+.installAppButton {
+  position: fixed;
+  inset-inline-end: 18px;
+  inset-block-end: 18px;
+  z-index: 40;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-family: var(--english-font), sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--button-color, #542065);
+  box-shadow: 0 10px 30px rgba(40, 16, 47, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.installAppButton:hover {
+  transform: translateY(-2px);
+}
+
+.pwaToast {
+  position: fixed;
+  inset-inline: 16px;
+  inset-block-end: 16px;
+  z-index: 50;
+  max-width: 420px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #28102f;
+  color: #f5eef8;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+}
+
+.pwaToast p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pwaToastActions {
+  display: flex;
+  gap: 10px;
+}
+
+.pwaToastActions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pwaToastActions button:not(.pwaToastDismiss) {
+  background: #f5eef8;
+  color: #28102f;
+}
+
+.pwaToastDismiss {
+  background: transparent;
+  color: #f5eef8;
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .installAppButton {
+    inset-block-end: 14px;
+    inset-inline-end: 14px;
+    padding: 10px 16px;
+    font-size: 12px;
   }
 }

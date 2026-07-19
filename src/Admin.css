@@ -8,6 +8,13 @@
   color: #fff;
 }
 
+.adminSectionLoading {
+  padding: 40px;
+  text-align: center;
+  color: #78667d;
+  font-weight: 700;
+}
+
 .adminLoginPage {
   min-height: 100vh;
   display: grid;
@@ -387,37 +394,6 @@
   grid-column: 1 / -1;
 }
 
-.adminImagePreview {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.adminCurrentProductImage {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 14px;
-  border: 1px solid #e4dbe9;
-  background: #f7f3f9;
-}
-
-.adminImagePlaceholder {
-  width: 120px;
-  height: 120px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  border: 1px dashed #cdbdd6;
-  background: #f7f3f9;
-  color: #9a86a3;
-  font-size: 12px;
-  text-align: center;
-  padding: 8px;
-}
-
 .adminImageUnavailable {
   width: 120px;
   height: 120px;
@@ -751,10 +727,6 @@
   cursor: pointer;
 }
 
-.adminSiteSettingsGrid label.adminFullWidthField {
-  grid-column: 1 / -1;
-}
-
 .adminSiteSettingsForm button {
   margin-top: 20px;
   border: 0;
@@ -844,8 +816,6 @@
   box-shadow: 0 0 0 3px rgba(107, 49, 125, 0.12);
 }
 
-/* Theme image previews reuse .adminImagePreview / .adminCurrentProductImage / .adminImagePlaceholder,
-   scoped to explicit hero/logo group classes rather than sibling position. */
 .adminImageAdjustGroup {
   margin-bottom: 18px;
   padding-bottom: 18px;
@@ -857,58 +827,77 @@
   padding-bottom: 0;
 }
 
-/* transform:scale() on the preview <img> paints beyond its own box, so the
-   clip boundary has to live on this wrapper — not on the <img> itself. */
-.adminHeroImageGroup .adminImagePreview,
-.adminLogoImageGroup .adminImagePreview {
-  display: block;
-  position: relative;
+/* ---------- Manual crop editor (logo / hero / product / category images) ---------- */
+
+.adminImageCropEditor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
   margin-top: 10px;
+}
+
+.adminCropFrame {
+  position: relative;
   overflow: hidden;
+  max-width: 100%;
   border-radius: 14px;
+  border: 2px dashed #b391c4;
+  background: #f7f3f9;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
 }
 
-.adminHeroImageGroup .adminImagePreview {
-  width: 100%;
-  max-width: 480px;
-  height: 170px;
+.adminCropFrame:active {
+  cursor: grabbing;
 }
 
-.adminLogoImageGroup .adminImagePreview {
-  width: 130px;
-  height: 130px;
-}
-
-.adminHeroImageGroup .adminCurrentProductImage,
-.adminHeroImageGroup .adminImagePlaceholder,
-.adminLogoImageGroup .adminCurrentProductImage,
-.adminLogoImageGroup .adminImagePlaceholder {
+.adminCropFrameImage {
+  display: block;
   width: 100%;
   height: 100%;
-  max-width: none;
-  border-radius: 0;
-  border: 0;
+  pointer-events: none;
 }
 
-.adminHeroImageGroup .adminCurrentProductImage {
-  object-fit: cover;
-}
-
-.adminLogoImageGroup .adminCurrentProductImage {
+.adminCropFrameEmpty {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #9a86a3;
+  font-size: 12px;
+  text-align: center;
   padding: 8px;
 }
 
-.adminImageAdjustControls {
+.adminCropFrameHint {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(40, 16, 47, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.adminCropControls {
   display: grid;
   gap: 10px;
-  margin-top: 14px;
+  min-width: 220px;
+  flex: 1;
   padding: 14px;
   border-radius: 12px;
   background: #f9f6fb;
   border: 1px solid #e4dbe9;
 }
 
-.adminImageAdjustControls label {
+.adminCropControls label {
   display: grid;
   gap: 6px;
   font-size: 13px;
@@ -916,7 +905,7 @@
   color: #43204d;
 }
 
-.adminImageAdjustControls input[type="range"] {
+.adminCropControls input[type="range"] {
   width: 100%;
   height: 6px;
   border-radius: 6px;
@@ -926,7 +915,7 @@
   accent-color: #6b317d;
 }
 
-.adminImageAdjustControls select {
+.adminCropControls select {
   padding: 10px 12px;
   border: 1px solid #d9cfe0;
   border-radius: 10px;
@@ -1142,9 +1131,12 @@
     width: 100%;
   }
 
-  .adminHeroImageGroup .adminImagePreview {
-    max-width: 100%;
-    height: 140px;
+  .adminImageCropEditor {
+    flex-direction: column;
+  }
+
+  .adminCropControls {
+    width: 100%;
   }
 
   .adminResetImageButton {
@@ -1571,6 +1563,141 @@
   cursor: not-allowed;
 }
 
+/* ---------- Weekly opening hours editor ---------- */
+
+.adminWeeklyHoursSection {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #e4dbe9;
+  border-radius: 14px;
+  background: #f9f6fb;
+}
+
+.adminWeeklyHoursSection h3 {
+  margin: 0 0 4px;
+}
+
+.adminWeeklyHoursSection > p {
+  margin: 0 0 16px;
+  color: #78667d;
+  font-size: 13px;
+}
+
+.adminWeeklyPresetsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.adminWeeklyPreset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 260px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4dbe9;
+}
+
+.adminWeeklyPreset span {
+  flex: 1 1 100%;
+  font-weight: 700;
+  color: #43204d;
+  font-size: 13px;
+}
+
+.adminWeeklyPreset input[type="time"] {
+  padding: 8px 10px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.adminWeeklyPreset button {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: #542065;
+}
+
+.adminWeeklyHoursGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.adminWeeklyHoursRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4dbe9;
+}
+
+.adminWeeklyDayLabel {
+  min-width: 70px;
+  font-weight: 700;
+  color: #43204d;
+}
+
+.adminWeeklyHoursRow .productVisibleLabel {
+  min-width: 90px;
+}
+
+.adminWeeklyHoursRow input[type="time"] {
+  padding: 8px 10px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.adminWeeklyHoursRow input[type="time"]:disabled {
+  opacity: 0.5;
+}
+
+/* ---------- Homepage layout controls ---------- */
+
+.adminLayoutSection {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #e4dbe9;
+  border-radius: 14px;
+  background: #f9f6fb;
+  display: grid;
+  gap: 16px;
+}
+
+.adminLayoutSection .adminProductsHeader h3 {
+  margin: 0;
+}
+
+.adminLayoutSection > label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+  color: #43204d;
+}
+
+.adminLayoutSection input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  background: #e4dbe9;
+  outline: none;
+  cursor: pointer;
+  accent-color: #6b317d;
+}
+
 /* ---------- Mobile: refactor-added components ---------- */
 
 @media (max-width: 700px) {
@@ -1633,6 +1760,280 @@
 
   .adminOptionChoiceRow input,
   .adminOptionChoiceRow button {
+    width: 100%;
+  }
+
+  .adminWeeklyHoursRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminWeeklyHoursRow input[type="time"] {
+    width: 100%;
+  }
+
+  .adminWeeklyPreset {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminWeeklyPreset input[type="time"],
+  .adminWeeklyPreset button {
+    width: 100%;
+  }
+}
+
+/* ---------- Branch Management ---------- */
+.adminBranchForm {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+}
+
+.adminBranchForm h3 {
+  margin: 0 0 14px;
+}
+
+.adminBranchCloneSection {
+  background: #f8f3fa;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adminBranchCloneTitle {
+  margin: 0;
+  font-weight: 700;
+  color: #542065;
+}
+
+.adminBranchCloneOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adminBranchCloneSection select {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  max-width: 320px;
+}
+
+.adminBranchCloneHint {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: #8a7690;
+}
+
+.adminBranchFormGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.adminBranchFormGrid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #542065;
+}
+
+.adminBranchFormGrid input {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+}
+
+.adminBranchesList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.adminBranchCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+  border: 2px solid transparent;
+}
+
+.adminBranchCardActive {
+  border-color: #542065;
+}
+
+.adminBranchCard h3 {
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.adminBranchCard p {
+  margin: 0 0 6px;
+  color: #78667d;
+}
+
+.adminBranchCard small {
+  display: block;
+  color: #8a7690;
+}
+
+.adminBranchDefaultTag,
+.adminBranchCurrentTag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f1e8f5;
+  color: #542065;
+}
+
+.adminBranchCurrentTag {
+  background: #542065;
+  color: #fff;
+}
+
+.adminBranchCard select {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+}
+
+.adminBranchQrPanel {
+  flex-basis: 100%;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee2f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.adminBranchQrUrlRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.adminBranchQrUrlRow input {
+  flex: 1 1 220px;
+  min-width: 160px;
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.adminBranchQrUrlRow button,
+.adminBranchQrUrlRow a {
+  border: 0;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: #542065;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.adminBranchQrImageRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.adminBranchQrImageRow img {
+  border-radius: 8px;
+  border: 1px solid #e4dbe9;
+  background: #fff;
+}
+
+.adminBranchSyncPanel {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adminBranchSyncPanel h3 {
+  margin: 0;
+}
+
+.adminSyncSourceLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  color: #542065;
+  max-width: 320px;
+}
+
+.adminSyncSourceLabel select {
+  border: 1px solid #e4dbe9;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+}
+
+.adminSyncAspectsGrid,
+.adminSyncTargetsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.adminSyncAspectOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .adminBranchCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adminCategoryActions {
+    width: 100%;
+  }
+
+  .adminBranchQrUrlRow input {
     width: 100%;
   }
 }

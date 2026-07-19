@@ -1,66 +1,64 @@
 
-import { useEffect, useState, useCallback } from 'react'
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-} from 'firebase/firestore'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
+import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
-import Admin from './Admin.jsx'
-import { db } from './firebase.js'
 import { menuSections } from './menuData.js'
+import { applyAdminSeo, applyPublicSeo } from './seo.js'
+import InstallPrompt from './pwa/InstallPrompt.jsx'
+import PwaUpdatePrompt from './pwa/PwaUpdatePrompt.jsx'
+import { usePwaUpdate } from './pwa/usePwaUpdate.js'
 import {
   clampImageOffset,
   clampImageScale,
+  clampLogoSize,
+  clampScaleFactor,
+  clampSpacing,
+  clampTextScale,
   convertGoogleDriveLink,
+  dayKeys,
+  dayLabels,
+  defaultContactSettings,
+  defaultSiteSettings,
+  defaultThemeSettings,
+  formatDayHours,
   getActivePrice,
+  getTodayKey,
+  imageCropToStyle,
   isProductVisibleNow,
+  normalizeWeeklyHours,
 } from './admin/utils/adminUtils.js'
+import {
+  DEFAULT_BRANCH_ID,
+  branchDocRef,
+  categoriesCollectionRef,
+  contactSettingsDocRef,
+  normalizeBranch,
+  productsCollectionRef,
+  siteSettingsDocRef,
+  themeSettingsDocRef,
+} from './admin/utils/branchPaths.js'
 
-const DEFAULT_SITE_SETTINGS = {
-  siteNameEn: 'RESTAURANT NAME',
-  siteNameAr: 'اسم المطعم',
-  welcomeEn: 'Welcome',
-  welcomeAr: 'أهلًا وسهلًا',
-  descriptionEn: 'Explore our menu.',
-  descriptionAr: 'تصفح قائمة الطعام.',
-  workingHours: '',
-  footerText: 'RESTAURANT NAME',
-  currency: 'BD',
-  showPrices: true,
+// Code-split: the admin panel (product/category managers, drag-and-drop,
+// image crop editors, QR generation, ...) is a large bundle that only the
+// handful of logged-in admins ever need — lazy-loading it keeps every
+// public menu visitor's initial download small.
+const Admin = lazy(() => import('./Admin.jsx'))
+
+// /menu/:code opens that branch's independent menu; anything else (including
+// the bare "/") falls back to the original/default branch so every link
+// that worked before branches existed keeps working unchanged.
+function parseBranchIdFromPath(pathname) {
+  const menuMatch = pathname.match(/^\/menu\/([a-z0-9-]+)\/?$/)
+  return menuMatch ? menuMatch[1] : DEFAULT_BRANCH_ID
 }
 
-const DEFAULT_THEME_SETTINGS = {
-  heroBackgroundUrl: '',
-  logoUrl: '',
-  pageBackgroundColor: '#f7f3f8',
-  heroBackgroundColor: '#28102f',
-  primaryColor: '#582369',
-  buttonColor: '#542065',
-  priceBackgroundColor: '#582369',
-  priceTextColor: '#ffffff',
-  headingColor: '#35123f',
-  textColor: '#26132e',
-  mutedTextColor: '#77637d',
-  navigationBackgroundColor: '#ffffff',
-  footerBackgroundColor: '#28102f',
-  arabicFont: 'Cairo',
-  englishFont: 'Montserrat',
-  heroOverlayOpacity: 0.68,
-}
-
-const DEFAULT_CONTACT_SETTINGS = {
-  phone: '',
-  whatsapp: '',
-  googleMapsUrl: '',
-  instagramUrl: '',
-  tiktokUrl: '',
-  snapchatUrl: '',
-  xUrl: '',
-  facebookUrl: '',
-}
+// siteSettings/themeSettings/contactSettings all use the same shape the
+// admin panel edits and saves — a single shared source of defaults instead
+// of a second, easily-drifting copy of every field.
+const DEFAULT_SITE_SETTINGS = { ...defaultSiteSettings, weeklyHours: null }
+const DEFAULT_THEME_SETTINGS = defaultThemeSettings
+const DEFAULT_CONTACT_SETTINGS = defaultContactSettings
 
 // Removes spaces, plus signs, dashes and parentheses from a WhatsApp number.
 function normalizeWhatsappNumber(rawNumber) {
@@ -75,7 +73,7 @@ function normalizeWhatsappNumber(rawNumber) {
     .replace(/[()]/g, '')
 }
 
-function ProductImage({ src, alt, onClick, failed, onError }) {
+function ProductImage({ src, alt, crop, onClick, failed, onError }) {
   const resolvedSrc = convertGoogleDriveLink(src)
   const isClickable = Boolean(resolvedSrc) && !failed
 
@@ -92,8 +90,15 @@ function ProductImage({ src, alt, onClick, failed, onError }) {
 
   if (!resolvedSrc || failed) {
     return (
-      <div className="productImage">
-        <span>IMAGE</span>
+      <div className="productImage productImagePlaceholder" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+          <path
+            d="M4 8h13v5.2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"
+            strokeLinejoin="round"
+          />
+          <path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8 4.5c-.6.6-.6 1.4 0 2M12 4.5c-.6.6-.6 1.4 0 2" strokeLinecap="round" />
+        </svg>
       </div>
     )
   }
@@ -112,6 +117,7 @@ function ProductImage({ src, alt, onClick, failed, onError }) {
         src={resolvedSrc}
         alt={alt}
         loading="lazy"
+        style={imageCropToStyle(crop)}
         onError={onError}
       />
     </div>
@@ -178,8 +184,11 @@ function App() {
   const [lightboxImage, setLightboxImage] = useState(null)
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
+  const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
+  const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
+  const branchId = parseBranchIdFromPath(window.location.pathname)
 
   const closeLightbox = useCallback(() => {
     setLightboxImage(null)
@@ -198,32 +207,54 @@ function App() {
 
     let cancelled = false
 
+    async function loadBranchMeta() {
+      if (branchId === DEFAULT_BRANCH_ID) {
+        if (!cancelled) setBranchState({ status: 'ok', branch: null })
+        return
+      }
+
+      try {
+        const branchSnapshot = await getDoc(branchDocRef(branchId))
+
+        if (cancelled) return
+
+        if (!branchSnapshot.exists()) {
+          setBranchState({ status: 'not-found', branch: null })
+          return
+        }
+
+        const branch = normalizeBranch({ id: branchSnapshot.id, ...branchSnapshot.data() })
+
+        setBranchState({
+          status: branch.status === 'active' ? 'ok' : 'unavailable',
+          branch,
+        })
+      } catch (branchError) {
+        console.error(branchError)
+        if (!cancelled) setBranchState({ status: 'ok', branch: null })
+      }
+    }
+
     async function loadSiteSettings() {
       try {
         const settingsSnapshot = await getDoc(
-          doc(db, 'siteSettings', 'main'),
+          siteSettingsDocRef(branchId),
         )
 
         if (!cancelled && settingsSnapshot.exists()) {
           const data = settingsSnapshot.data()
 
           setSiteSettings({
-            siteNameEn: data.siteNameEn ?? DEFAULT_SITE_SETTINGS.siteNameEn,
-            siteNameAr: data.siteNameAr ?? DEFAULT_SITE_SETTINGS.siteNameAr,
-            welcomeEn: data.welcomeEn ?? DEFAULT_SITE_SETTINGS.welcomeEn,
-            welcomeAr: data.welcomeAr ?? DEFAULT_SITE_SETTINGS.welcomeAr,
-            descriptionEn:
-              data.descriptionEn ?? DEFAULT_SITE_SETTINGS.descriptionEn,
-            descriptionAr:
-              data.descriptionAr ?? DEFAULT_SITE_SETTINGS.descriptionAr,
-            workingHours:
-              data.workingHours ?? DEFAULT_SITE_SETTINGS.workingHours,
-            footerText: data.footerText ?? DEFAULT_SITE_SETTINGS.footerText,
-            currency: data.currency ?? DEFAULT_SITE_SETTINGS.currency,
+            ...DEFAULT_SITE_SETTINGS,
+            ...data,
             showPrices:
               typeof data.showPrices === 'boolean'
                 ? data.showPrices
                 : DEFAULT_SITE_SETTINGS.showPrices,
+            // null (not the default object) is the "never configured" signal
+            // the public site uses to fall back to the legacy workingHours
+            // free-text string instead of a per-day schedule.
+            weeklyHours: normalizeWeeklyHours(data.weeklyHours),
           })
         }
       } catch (settingsError) {
@@ -234,57 +265,32 @@ function App() {
     async function loadThemeSettings() {
       setThemeLoading(true)
       try {
-        const themeSnapshot = await getDoc(doc(db, 'themeSettings', 'main'))
+        const themeSnapshot = await getDoc(themeSettingsDocRef(branchId))
 
         if (!cancelled && themeSnapshot.exists()) {
           const data = themeSnapshot.data()
 
           setThemeSettings({
-            heroBackgroundUrl:
-              data.heroBackgroundUrl ??
-              DEFAULT_THEME_SETTINGS.heroBackgroundUrl,
-            logoUrl: data.logoUrl ?? DEFAULT_THEME_SETTINGS.logoUrl,
-            pageBackgroundColor:
-              data.pageBackgroundColor ??
-              DEFAULT_THEME_SETTINGS.pageBackgroundColor,
-heroBackgroundColor:
-  data.heroBackgroundColor ??
-  DEFAULT_THEME_SETTINGS.heroBackgroundColor,
-
-            primaryColor:
-              data.primaryColor ?? DEFAULT_THEME_SETTINGS.primaryColor,
-            buttonColor:
-              data.buttonColor ?? DEFAULT_THEME_SETTINGS.buttonColor,
-            priceBackgroundColor:
-              data.priceBackgroundColor ??
-              DEFAULT_THEME_SETTINGS.priceBackgroundColor,
-            priceTextColor:
-              data.priceTextColor ?? DEFAULT_THEME_SETTINGS.priceTextColor,
-            headingColor:
-              data.headingColor ?? DEFAULT_THEME_SETTINGS.headingColor,
-            textColor: data.textColor ?? DEFAULT_THEME_SETTINGS.textColor,
-            mutedTextColor:
-              data.mutedTextColor ?? DEFAULT_THEME_SETTINGS.mutedTextColor,
-            navigationBackgroundColor:
-              data.navigationBackgroundColor ??
-              DEFAULT_THEME_SETTINGS.navigationBackgroundColor,
-            footerBackgroundColor:
-              data.footerBackgroundColor ??
-              DEFAULT_THEME_SETTINGS.footerBackgroundColor,
-            arabicFont: data.arabicFont ?? DEFAULT_THEME_SETTINGS.arabicFont,
-            englishFont:
-              data.englishFont ?? DEFAULT_THEME_SETTINGS.englishFont,
+            ...DEFAULT_THEME_SETTINGS,
+            ...data,
             heroOverlayOpacity:
               typeof data.heroOverlayOpacity === 'number'
                 ? data.heroOverlayOpacity
                 : DEFAULT_THEME_SETTINGS.heroOverlayOpacity,
-            heroScale: clampImageScale(data.heroScale ?? DEFAULT_THEME_SETTINGS.heroScale),
-            heroOffsetX: clampImageOffset(data.heroOffsetX ?? DEFAULT_THEME_SETTINGS.heroOffsetX),
-            heroOffsetY: clampImageOffset(data.heroOffsetY ?? DEFAULT_THEME_SETTINGS.heroOffsetY),
-            logoScale: clampImageScale(data.logoScale ?? DEFAULT_THEME_SETTINGS.logoScale),
-            logoOffsetX: clampImageOffset(data.logoOffsetX ?? DEFAULT_THEME_SETTINGS.logoOffsetX),
-            logoOffsetY: clampImageOffset(data.logoOffsetY ?? DEFAULT_THEME_SETTINGS.logoOffsetY),
             logoFit: data.logoFit === 'cover' ? 'cover' : DEFAULT_THEME_SETTINGS.logoFit,
+            logoPosition: data.logoPosition || DEFAULT_THEME_SETTINGS.logoPosition,
+            heroAlign: data.heroAlign || DEFAULT_THEME_SETTINGS.heroAlign,
+            buttonSize: data.buttonSize || DEFAULT_THEME_SETTINGS.buttonSize,
+            logoSize: clampLogoSize(data.logoSize ?? DEFAULT_THEME_SETTINGS.logoSize),
+            logoSpacingTop: clampSpacing(data.logoSpacingTop ?? DEFAULT_THEME_SETTINGS.logoSpacingTop),
+            logoSpacingSide: clampSpacing(data.logoSpacingSide ?? DEFAULT_THEME_SETTINGS.logoSpacingSide),
+            heroPaddingScale: clampScaleFactor(
+              data.heroPaddingScale ?? DEFAULT_THEME_SETTINGS.heroPaddingScale,
+            ),
+            sectionSpacingScale: clampScaleFactor(
+              data.sectionSpacingScale ?? DEFAULT_THEME_SETTINGS.sectionSpacingScale,
+            ),
+            textScale: clampTextScale(data.textScale ?? DEFAULT_THEME_SETTINGS.textScale),
           })
         }
       } catch (themeError) {
@@ -297,26 +303,13 @@ heroBackgroundColor:
     async function loadContactSettings() {
       try {
         const contactSnapshot = await getDoc(
-          doc(db, 'contactSettings', 'main'),
+          contactSettingsDocRef(branchId),
         )
 
         if (!cancelled && contactSnapshot.exists()) {
           const data = contactSnapshot.data()
 
-          setContactSettings({
-            phone: data.phone ?? DEFAULT_CONTACT_SETTINGS.phone,
-            whatsapp: data.whatsapp ?? DEFAULT_CONTACT_SETTINGS.whatsapp,
-            googleMapsUrl:
-              data.googleMapsUrl ?? DEFAULT_CONTACT_SETTINGS.googleMapsUrl,
-            instagramUrl:
-              data.instagramUrl ?? DEFAULT_CONTACT_SETTINGS.instagramUrl,
-            tiktokUrl: data.tiktokUrl ?? DEFAULT_CONTACT_SETTINGS.tiktokUrl,
-            snapchatUrl:
-              data.snapchatUrl ?? DEFAULT_CONTACT_SETTINGS.snapchatUrl,
-            xUrl: data.xUrl ?? DEFAULT_CONTACT_SETTINGS.xUrl,
-            facebookUrl:
-              data.facebookUrl ?? DEFAULT_CONTACT_SETTINGS.facebookUrl,
-          })
+          setContactSettings({ ...DEFAULT_CONTACT_SETTINGS, ...data })
         }
       } catch (contactError) {
         console.error(contactError)
@@ -329,7 +322,7 @@ heroBackgroundColor:
 
       try {
         const categoriesSnapshot = await getDocs(
-          collection(db, 'categories'),
+          categoriesCollectionRef(branchId),
         )
 
         const categories = categoriesSnapshot.docs
@@ -346,7 +339,7 @@ heroBackgroundColor:
         const sections = await Promise.all(
           categories.map(async (category) => {
             const productsSnapshot = await getDocs(
-              collection(db, 'categories', category.id, 'products'),
+              productsCollectionRef(branchId, category.id),
             )
 
             const products = productsSnapshot.docs
@@ -364,6 +357,8 @@ heroBackgroundColor:
               id: category.id,
               titleEn: category.nameEn || category.id,
               titleAr: category.nameAr || '',
+              imageUrl: category.imageUrl || '',
+              imageCrop: category.imageCrop,
               products,
             }
           }),
@@ -373,13 +368,16 @@ heroBackgroundColor:
           (section) => section.products.length > 0,
         )
 
-       if (!cancelled) {
-  setFirebaseMenu(
-    categoriesSnapshot.empty
-      ? menuSections
-      : visibleSections,
-  )
-}
+        if (!cancelled) {
+          // The bundled sample menu is only ever a placeholder for the
+          // original/default branch's very first load — any other branch
+          // with zero categories is a genuinely empty menu, not a demo.
+          setFirebaseMenu(
+            categoriesSnapshot.empty && branchId === DEFAULT_BRANCH_ID
+              ? menuSections
+              : visibleSections,
+          )
+        }
       } catch (loadError) {
         console.error(loadError)
 
@@ -393,6 +391,7 @@ heroBackgroundColor:
       }
     }
 
+    loadBranchMeta()
     loadSiteSettings()
     loadThemeSettings()
     loadContactSettings()
@@ -401,10 +400,72 @@ heroBackgroundColor:
     return () => {
       cancelled = true
     }
-  }, [isAdminPage])
+  }, [isAdminPage, branchId])
+
+  useEffect(() => {
+    if (isAdminPage) {
+      applyAdminSeo()
+      return
+    }
+
+    if (branchState.status !== 'ok' || themeLoading) {
+      return
+    }
+
+    const canonicalUrl =
+      branchId === DEFAULT_BRANCH_ID
+        ? `${window.location.origin}/`
+        : `${window.location.origin}/menu/${branchState.branch?.code || branchId}`
+
+    const image =
+      convertGoogleDriveLink(themeSettings.heroBackgroundUrl) ||
+      convertGoogleDriveLink(themeSettings.logoUrl) ||
+      ''
+
+    applyPublicSeo({
+      siteNameEn: siteSettings.siteNameEn,
+      siteNameAr: siteSettings.siteNameAr,
+      descriptionEn: siteSettings.descriptionEn,
+      phone: contactSettings.phone,
+      address: branchState.branch?.address,
+      imageUrl: image,
+      canonicalUrl,
+      weeklyHours: siteSettings.weeklyHours,
+    })
+  }, [
+    isAdminPage,
+    branchId,
+    branchState,
+    themeLoading,
+    siteSettings,
+    themeSettings,
+    contactSettings,
+  ])
 
   if (isAdminPage) {
-    return <Admin />
+    return (
+      <Suspense fallback={<main className="adminLoading" dir="rtl">جاري التحميل...</main>}>
+        <Admin />
+      </Suspense>
+    )
+  }
+
+  if (branchState.status === 'not-found') {
+    return (
+      <main className="branchNotice">
+        <h1>Branch not found | الفرع غير موجود</h1>
+        <p>This menu link doesn't match any branch. | لا يوجد فرع مطابق لهذا الرابط.</p>
+      </main>
+    )
+  }
+
+  if (branchState.status === 'unavailable') {
+    return (
+      <main className="branchNotice">
+        <h1>Menu unavailable | القائمة غير متاحة حاليًا</h1>
+        <p>This branch's menu isn't published right now. | قائمة هذا الفرع غير منشورة حاليًا.</p>
+      </main>
+    )
   }
 
  const firstSectionId = firebaseMenu[0]?.id || ''
@@ -420,10 +481,22 @@ heroBackgroundColor:
   }
   const logoUrl = convertGoogleDriveLink(themeSettings.logoUrl)
   const showLogo = Boolean(logoUrl) && !logoFailed
+  const logoPosition = themeSettings.logoPosition || 'top-left'
+  const resolvedLogoSize = clampLogoSize(themeSettings.logoSize)
+  const resolvedLogoSpacingTop = clampSpacing(themeSettings.logoSpacingTop)
+  const resolvedLogoSpacingSide = clampSpacing(themeSettings.logoSpacingSide)
+  const logoCropScale = clampImageScale(themeSettings.logoScale)
   const logoStyle = {
+    top: `${resolvedLogoSpacingTop}px`,
+    width: `${resolvedLogoSize}px`,
+    height: `${resolvedLogoSize}px`,
     objectFit: themeSettings.logoFit === 'cover' ? 'cover' : 'contain',
     objectPosition: `${clampImageOffset(themeSettings.logoOffsetX)}% ${clampImageOffset(themeSettings.logoOffsetY)}%`,
-    transform: `scale(${clampImageScale(themeSettings.logoScale)})`,
+    ...(logoPosition === 'top-right'
+      ? { right: `${resolvedLogoSpacingSide}px`, transform: `scale(${logoCropScale})` }
+      : logoPosition === 'top-center'
+        ? { left: '50%', transform: `translateX(-50%) scale(${logoCropScale})` }
+        : { left: `${resolvedLogoSpacingSide}px`, transform: `scale(${logoCropScale})` }),
   }
 
   const hasContactInfo =
@@ -438,10 +511,24 @@ heroBackgroundColor:
 
   const normalizedWhatsapp = normalizeWhatsappNumber(contactSettings.whatsapp)
 
+  const heroAlign = themeSettings.heroAlign === 'center' ? 'center' : 'left'
+  const buttonSize = themeSettings.buttonSize || 'md'
+  const buttonSizing = {
+    sm: { padding: '9px 18px', fontSize: '12px' },
+    md: { padding: '12px 24px', fontSize: '14px' },
+    lg: { padding: '15px 30px', fontSize: '16px' },
+  }[buttonSize]
+
+  const todayKey = getTodayKey()
+  const todayDay = siteSettings.weeklyHours ? siteSettings.weeklyHours[todayKey] : null
+  const todayHoursText = todayDay ? formatDayHours(todayDay) : null
+  const isClosedToday = Boolean(todayDay?.closed)
+
   const rootStyle = {
     '--page-background': themeSettings.pageBackgroundColor,
     '--primary-color': themeSettings.primaryColor,
     '--button-color': themeSettings.buttonColor,
+    '--button-text-color': themeSettings.buttonTextColor,
     '--price-background': themeSettings.priceBackgroundColor,
     '--price-text-color': themeSettings.priceTextColor,
     '--heading-color': themeSettings.headingColor,
@@ -449,14 +536,29 @@ heroBackgroundColor:
     '--muted-text-color': themeSettings.mutedTextColor,
     '--navigation-background': themeSettings.navigationBackgroundColor,
     '--footer-background': themeSettings.footerBackgroundColor,
+    '--footer-text-color': themeSettings.footerTextColor,
+    '--border-color': themeSettings.borderColor,
+    '--menu-background': themeSettings.menuBackgroundColor,
+    '--accent-color': themeSettings.accentColor,
     '--english-font': themeSettings.englishFont,
     '--arabic-font': themeSettings.arabicFont,
     '--hero-overlay-opacity': themeSettings.heroOverlayOpacity,
     '--hero-background': themeSettings.heroBackgroundColor,
+    '--hero-justify': heroAlign === 'center' ? 'center' : 'flex-start',
+    '--hero-padding-scale': themeSettings.heroPaddingScale,
+    '--section-spacing-scale': themeSettings.sectionSpacingScale,
+    '--text-scale': themeSettings.textScale,
+    '--button-padding': buttonSizing.padding,
+    '--button-font-size': buttonSizing.fontSize,
     backgroundColor: themeSettings.pageBackgroundColor,
   }
 if (themeLoading) {
-  return null
+  return (
+    <main className="branchNotice">
+      <div className="pageLoadingSpinner" aria-hidden="true" />
+      <p>Loading menu... | جاري تحميل القائمة...</p>
+    </main>
+  )
 }
   return (
     <main className="website" style={rootStyle}>
@@ -473,17 +575,17 @@ if (themeLoading) {
           style={{ opacity: themeSettings.heroOverlayOpacity }}
         />
 
-        <div className="heroContent">
-          {showLogo && (
-            <img
-              className="heroLogo"
-              src={logoUrl}
-              alt={siteSettings.siteNameEn}
-              style={logoStyle}
-              onError={() => setLogoFailed(true)}
-            />
-          )}
+        {showLogo && (
+          <img
+            className="heroLogo"
+            src={logoUrl}
+            alt={siteSettings.siteNameEn}
+            style={logoStyle}
+            onError={() => setLogoFailed(true)}
+          />
+        )}
 
+        <div className={`heroContent heroContent--${heroAlign}`}>
           <h1 className="brandName">
             {siteSettings.siteNameEn}
             {siteSettings.siteNameAr && <span>{siteSettings.siteNameAr}</span>}
@@ -500,8 +602,25 @@ if (themeLoading) {
           </div>
 
           <div className="workingHours">
-            <span>Open Daily | مفتوح يوميًا</span>
-            <strong>{siteSettings.workingHours}</strong>
+            {siteSettings.weeklyHours ? (
+              isClosedToday ? (
+                <span className="workingHoursClosed">Closed today | مغلق اليوم</span>
+              ) : (
+                <>
+                  <span>
+                    {siteSettings.openingHoursLabelEn} | {siteSettings.openingHoursLabelAr}
+                  </span>
+                  <strong>{todayHoursText}</strong>
+                </>
+              )
+            ) : (
+              <>
+                <span>
+                  {siteSettings.openingHoursLabelEn} | {siteSettings.openingHoursLabelAr}
+                </span>
+                <strong>{siteSettings.workingHours}</strong>
+              </>
+            )}
           </div>
 
           <a className="downArrow" href={`#${firstSectionId}`} aria-label="View menu">
@@ -510,47 +629,50 @@ if (themeLoading) {
         </div>
       </section>
 
-      <nav className="categoryNavigation">
-        <div className="categoryNavigationInner">
-          {firebaseMenu.map((section) => (
-            <a key={section.id} href={`#${section.id}`} className="navItem">
-              <span>{section.titleEn}</span>
-              <small>{section.titleAr}</small>
-            </a>
-          ))}
-        </div>
-      </nav>
-
-      {menuLoading && (
-        <p
-          style={{
-            textAlign: 'center',
-            padding: '25px',
-          }}
-        >
-          جاري تحديث المنيو...
-        </p>
+      {firebaseMenu.length > 0 && (
+        <nav className="categoryNavigation">
+          <div className="categoryNavigationInner">
+            {firebaseMenu.map((section) => (
+              <a key={section.id} href={`#${section.id}`} className="navItem">
+                <span>{section.titleEn}</span>
+                <small>{section.titleAr}</small>
+              </a>
+            ))}
+          </div>
+        </nav>
       )}
 
-      {menuError && (
-        <p
-          style={{
-            textAlign: 'center',
-            padding: '15px',
-            color: '#a01616',
-          }}
-        >
-          {menuError}
-        </p>
+      {menuLoading && <p className="menuStatusMessage">جاري تحديث المنيو...</p>}
+
+      {menuError && <p className="menuStatusMessage menuStatusError">{menuError}</p>}
+
+      {!menuLoading && firebaseMenu.length === 0 && (
+        <div className="menuEmptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+            <path d="M4 8h13v5.2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z" strokeLinejoin="round" />
+            <path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p>Menu coming soon | القائمة قادمة قريبًا</p>
+        </div>
       )}
 
       <div className="menuArea">
         {firebaseMenu.map((section, index) => (
           <section className="menuSection" id={section.id} key={section.id}>
             <header className="menuSectionHeader">
-              <span className="sectionNumber">
-                {String(index + 1).padStart(2, '0')}
-              </span>
+              {section.imageUrl ? (
+                <img
+                  className="categoryImage"
+                  src={convertGoogleDriveLink(section.imageUrl)}
+                  alt={section.titleEn}
+                  style={imageCropToStyle(section.imageCrop)}
+                  loading="lazy"
+                />
+              ) : (
+                <span className="sectionNumber">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+              )}
 
               <div>
                 <h2>{section.titleEn}</h2>
@@ -575,6 +697,7 @@ if (themeLoading) {
                     <ProductImage
                       src={product.imageUrl}
                       alt={productAlt}
+                      crop={product.imageCrop}
                       failed={hasFailed}
                       onError={() =>
                         setFailedImages((previous) => ({
@@ -624,9 +747,27 @@ if (themeLoading) {
         ))}
       </div>
 
-      {hasContactInfo && (
+      {(hasContactInfo || siteSettings.weeklyHours) && (
         <section className="contactSection">
-          <h2 className="contactSectionTitle">Contact Us | تواصل معنا</h2>
+          <h2 className="contactSectionTitle">
+            {siteSettings.contactHeadingEn} | {siteSettings.contactHeadingAr}
+          </h2>
+
+          {siteSettings.weeklyHours && (
+            <ul className="weeklyScheduleList">
+              {dayKeys.map((key) => {
+                const day = siteSettings.weeklyHours[key]
+                const isToday = key === todayKey
+
+                return (
+                  <li key={key} className={isToday ? 'weeklyScheduleToday' : ''}>
+                    <span>{dayLabels[key].ar}</span>
+                    <span>{day.closed ? 'مغلق' : formatDayHours(day)}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
 
           <div className="contactLinks">
             {contactSettings.phone && (
@@ -729,6 +870,9 @@ if (themeLoading) {
           onClose={closeLightbox}
         />
       )}
+
+      <InstallPrompt />
+      <PwaUpdatePrompt {...pwaUpdate} />
     </main>
   )
 }

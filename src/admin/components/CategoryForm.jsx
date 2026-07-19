@@ -1,3 +1,6 @@
+import { defaultImageCrop, validateImageLink } from '../utils/adminUtils.js'
+import ImageCropEditor from './ImageCropEditor.jsx'
+
 function CategoryForm({
   formRef,
   editingCategory,
@@ -13,10 +16,18 @@ function CategoryForm({
   setCategoryIcon,
   categoryColor,
   setCategoryColor,
+  categoryImageUrl,
+  setCategoryImageUrl,
+  categoryImageCrop,
+  setCategoryImageCrop,
+  categoryImagePreviewUrl,
+  categoryImageError,
+  setCategoryImageError,
   savingCategory,
   onSubmit,
   onCancel,
 }) {
+  const imageValidation = validateImageLink(categoryImageUrl)
   return (
     <form className="adminCategoryForm" onSubmit={onSubmit} ref={formRef}>
       <fieldset disabled={savingCategory} className="adminFormFieldset">
@@ -85,6 +96,47 @@ function CategoryForm({
             إظهار القسم في المنيو
           </label>
         </div>
+
+        <label className="adminImageUrlLabel">
+          رابط صورة القسم (اختياري)
+          <input
+            type="text"
+            value={categoryImageUrl}
+            onChange={(event) => {
+              setCategoryImageUrl(event.target.value)
+              setCategoryImageError(false)
+            }}
+            placeholder="https://... أو رابط Google Drive"
+          />
+        </label>
+
+        {!imageValidation.valid && <p className="adminError">{imageValidation.message}</p>}
+
+        {categoryImageUrl.trim() && categoryImageError ? (
+          <p className="adminError">تعذر تحميل الصورة، تأكد من صحة الرابط</p>
+        ) : (
+          <ImageCropEditor
+            imageUrl={categoryImageUrl.trim() ? categoryImagePreviewUrl : ''}
+            value={categoryImageCrop}
+            onChange={setCategoryImageCrop}
+            onReset={() => setCategoryImageCrop(defaultImageCrop())}
+            onImageError={() => setCategoryImageError(true)}
+            shape="square"
+          />
+        )}
+
+        {categoryImageUrl.trim() && (
+          <button
+            type="button"
+            className="clearImageButton"
+            onClick={() => {
+              setCategoryImageUrl('')
+              setCategoryImageError(false)
+            }}
+          >
+            إزالة الصورة
+          </button>
+        )}
 
         <div className="adminCategoryFormButtons">
           <button type="submit" disabled={savingCategory}>
