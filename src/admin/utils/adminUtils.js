@@ -62,6 +62,18 @@ export const defaultThemeSettings = {
   sectionSpacingScale: 1,
   buttonSize: 'md',
   textScale: 1,
+  // Hero/header text + opening-hours-box colors. Defaults are chosen to
+  // exactly match (title/text/arrow) or closely approximate (the box's
+  // previously-translucent background/border, since a native color input
+  // can't represent transparency) the look these elements already had
+  // before they became independently editable.
+  heroTitleColor: '#ffffff',
+  heroTextEnColor: '#ffffff',
+  heroTextArColor: '#ffffff',
+  heroHoursBgColor: '#3e2844',
+  heroHoursBorderColor: '#645369',
+  heroHoursTextColor: '#ffffff',
+  heroDownArrowColor: '#ffffff',
 }
 
 export const logoPositionOptions = [
@@ -90,6 +102,9 @@ export const heroCropRatioOptions = [
 export const defaultContactSettings = {
   phone: '',
   whatsapp: '',
+  email: '',
+  website: '',
+  address: '',
   googleMapsUrl: '',
   instagramUrl: '',
   tiktokUrl: '',
@@ -325,6 +340,46 @@ export function validateWeeklyHours(weeklyHours) {
 
     if (!day.open || !day.close) {
       return { valid: false, message: `أدخل وقت الفتح والإغلاق ليوم ${dayLabels[key].ar}` }
+    }
+  }
+
+  return { valid: true, message: '' }
+}
+
+// ---------- Hero/header opening-hours box (public-facing, 2 rows only) ----------
+// Separate from the 7-day `weeklyHours` schedule above, which stays in
+// Firestore and stays editable in admin, but is no longer shown on the
+// public homepage — the hero box now only ever shows these two
+// independently-labelled, independently-hideable rows.
+
+export function defaultHeroHours() {
+  return {
+    row1: { labelEn: 'Weekday', labelAr: 'أيام الأسبوع', open: '08:00', close: '02:00', visible: true },
+    row2: { labelEn: 'Weekend', labelAr: 'نهاية الأسبوع', open: '08:00', close: '02:00', visible: true },
+  }
+}
+
+export function normalizeHeroHours(raw) {
+  const base = defaultHeroHours()
+  if (!raw || typeof raw !== 'object') return base
+
+  return {
+    row1: { ...base.row1, ...(raw.row1 || {}) },
+    row2: { ...base.row2, ...(raw.row2 || {}) },
+  }
+}
+
+export function validateHeroHours(heroHours) {
+  for (const rowKey of ['row1', 'row2']) {
+    const row = heroHours?.[rowKey]
+    if (!row || !row.visible) continue
+
+    if (!row.labelEn?.trim() || !row.labelAr?.trim()) {
+      return { valid: false, message: 'اكتب نص الصف بالإنجليزي والعربي في ساعات العمل بالهيدر' }
+    }
+
+    if (!row.open || !row.close) {
+      return { valid: false, message: 'أدخل وقت الفتح والإغلاق لكل صف ظاهر في ساعات العمل بالهيدر' }
     }
   }
 

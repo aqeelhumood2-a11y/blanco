@@ -1665,6 +1665,74 @@
   opacity: 0.5;
 }
 
+.adminSubheading {
+  margin: 24px 0 4px;
+  color: #43204d;
+}
+
+.adminSubheadingHint {
+  margin: 0 0 16px;
+  color: #78667d;
+  font-size: 13px;
+}
+
+.adminHeroHoursSection {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid #e4dbe9;
+  border-radius: 14px;
+  background: #f9f6fb;
+}
+
+.adminHeroHoursSection h3 {
+  margin: 0 0 4px;
+}
+
+.adminHeroHoursSection > p {
+  margin: 0 0 16px;
+  color: #78667d;
+  font-size: 13px;
+}
+
+.adminHeroHoursRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4dbe9;
+  margin-bottom: 12px;
+}
+
+.adminHeroHoursRow:last-child {
+  margin-bottom: 0;
+}
+
+.adminHeroHoursRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #43204d;
+}
+
+.adminHeroHoursRow label.productVisibleLabel {
+  flex-direction: row;
+  align-items: center;
+  flex-basis: 100%;
+}
+
+.adminHeroHoursRow input[type="text"],
+.adminHeroHoursRow input[type="time"] {
+  padding: 8px 10px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
 /* ---------- Homepage layout controls ---------- */
 
 .adminLayoutSection {
@@ -1770,6 +1838,11 @@
 
   .adminWeeklyHoursRow input[type="time"] {
     width: 100%;
+  }
+
+  .adminHeroHoursRow {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .adminWeeklyPreset {

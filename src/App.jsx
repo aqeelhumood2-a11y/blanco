@@ -16,16 +16,14 @@ import {
   clampSpacing,
   clampTextScale,
   convertGoogleDriveLink,
-  dayKeys,
-  dayLabels,
   defaultContactSettings,
+  defaultHeroHours,
   defaultSiteSettings,
   defaultThemeSettings,
-  formatDayHours,
   getActivePrice,
-  getTodayKey,
   imageCropToStyle,
   isProductVisibleNow,
+  normalizeHeroHours,
   normalizeWeeklyHours,
 } from './admin/utils/adminUtils.js'
 import {
@@ -56,7 +54,7 @@ function parseBranchIdFromPath(pathname) {
 // siteSettings/themeSettings/contactSettings all use the same shape the
 // admin panel edits and saves — a single shared source of defaults instead
 // of a second, easily-drifting copy of every field.
-const DEFAULT_SITE_SETTINGS = { ...defaultSiteSettings, weeklyHours: null }
+const DEFAULT_SITE_SETTINGS = { ...defaultSiteSettings, weeklyHours: null, heroHours: defaultHeroHours() }
 const DEFAULT_THEME_SETTINGS = defaultThemeSettings
 const DEFAULT_CONTACT_SETTINGS = defaultContactSettings
 
@@ -253,8 +251,11 @@ function App() {
                 : DEFAULT_SITE_SETTINGS.showPrices,
             // null (not the default object) is the "never configured" signal
             // the public site uses to fall back to the legacy workingHours
-            // free-text string instead of a per-day schedule.
+            // free-text string instead of a per-day schedule. Still loaded
+            // and kept in Firestore for backward compatibility, but no
+            // longer rendered anywhere on the public site (see heroHours).
             weeklyHours: normalizeWeeklyHours(data.weeklyHours),
+            heroHours: normalizeHeroHours(data.heroHours),
           })
         }
       } catch (settingsError) {
@@ -509,7 +510,21 @@ function App() {
     Boolean(contactSettings.xUrl) ||
     Boolean(contactSettings.facebookUrl)
 
+  const hasFooterContactInfo =
+    hasContactInfo ||
+    Boolean(contactSettings.email) ||
+    Boolean(contactSettings.website) ||
+    Boolean(contactSettings.address)
+
   const normalizedWhatsapp = normalizeWhatsappNumber(contactSettings.whatsapp)
+
+  const trimmedWebsite = (contactSettings.website || '').trim()
+  const websiteUrl = trimmedWebsite
+    ? /^https?:\/\//i.test(trimmedWebsite)
+      ? trimmedWebsite
+      : `https://${trimmedWebsite}`
+    : ''
+  const websiteDisplayText = websiteUrl.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '')
 
   const heroAlign = themeSettings.heroAlign === 'center' ? 'center' : 'left'
   const buttonSize = themeSettings.buttonSize || 'md'
@@ -519,10 +534,9 @@ function App() {
     lg: { padding: '15px 30px', fontSize: '16px' },
   }[buttonSize]
 
-  const todayKey = getTodayKey()
-  const todayDay = siteSettings.weeklyHours ? siteSettings.weeklyHours[todayKey] : null
-  const todayHoursText = todayDay ? formatDayHours(todayDay) : null
-  const isClosedToday = Boolean(todayDay?.closed)
+  const heroHoursRows = siteSettings.heroHours
+    ? [siteSettings.heroHours.row1, siteSettings.heroHours.row2].filter((row) => row?.visible)
+    : []
 
   const rootStyle = {
     '--page-background': themeSettings.pageBackgroundColor,
@@ -544,6 +558,13 @@ function App() {
     '--arabic-font': themeSettings.arabicFont,
     '--hero-overlay-opacity': themeSettings.heroOverlayOpacity,
     '--hero-background': themeSettings.heroBackgroundColor,
+    '--hero-title-color': themeSettings.heroTitleColor,
+    '--hero-text-en-color': themeSettings.heroTextEnColor,
+    '--hero-text-ar-color': themeSettings.heroTextArColor,
+    '--hero-hours-bg-color': themeSettings.heroHoursBgColor,
+    '--hero-hours-border-color': themeSettings.heroHoursBorderColor,
+    '--hero-hours-text-color': themeSettings.heroHoursTextColor,
+    '--hero-down-arrow-color': themeSettings.heroDownArrowColor,
     '--hero-justify': heroAlign === 'center' ? 'center' : 'flex-start',
     '--hero-padding-scale': themeSettings.heroPaddingScale,
     '--section-spacing-scale': themeSettings.sectionSpacingScale,
@@ -601,27 +622,20 @@ if (themeLoading) {
             <p dir="rtl">{siteSettings.descriptionAr}</p>
           </div>
 
-          <div className="workingHours">
-            {siteSettings.weeklyHours ? (
-              isClosedToday ? (
-                <span className="workingHoursClosed">Closed today | مغلق اليوم</span>
-              ) : (
-                <>
+          {heroHoursRows.length > 0 && (
+            <div className="workingHours">
+              {heroHoursRows.map((row, index) => (
+                <div className="workingHoursRow" key={index}>
                   <span>
-                    {siteSettings.openingHoursLabelEn} | {siteSettings.openingHoursLabelAr}
+                    {row.labelEn} | {row.labelAr}
                   </span>
-                  <strong>{todayHoursText}</strong>
-                </>
-              )
-            ) : (
-              <>
-                <span>
-                  {siteSettings.openingHoursLabelEn} | {siteSettings.openingHoursLabelAr}
-                </span>
-                <strong>{siteSettings.workingHours}</strong>
-              </>
-            )}
-          </div>
+                  <strong>
+                    {row.open} – {row.close}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          )}
 
           <a className="downArrow" href={`#${firstSectionId}`} aria-label="View menu">
             ↓
@@ -747,27 +761,11 @@ if (themeLoading) {
         ))}
       </div>
 
-      {(hasContactInfo || siteSettings.weeklyHours) && (
+      {hasContactInfo && (
         <section className="contactSection">
           <h2 className="contactSectionTitle">
             {siteSettings.contactHeadingEn} | {siteSettings.contactHeadingAr}
           </h2>
-
-          {siteSettings.weeklyHours && (
-            <ul className="weeklyScheduleList">
-              {dayKeys.map((key) => {
-                const day = siteSettings.weeklyHours[key]
-                const isToday = key === todayKey
-
-                return (
-                  <li key={key} className={isToday ? 'weeklyScheduleToday' : ''}>
-                    <span>{dayLabels[key].ar}</span>
-                    <span>{day.closed ? 'مغلق' : formatDayHours(day)}</span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
 
           <div className="contactLinks">
             {contactSettings.phone && (
@@ -861,6 +859,114 @@ if (themeLoading) {
 
       <footer className="footer">
         <p>{siteSettings.footerText}</p>
+
+        {hasFooterContactInfo && (
+          <div className="footerContact">
+            {contactSettings.address && (
+              <span className="footerContactItem">{contactSettings.address}</span>
+            )}
+
+            {contactSettings.phone && (
+              <a className="footerContactItem" href={`tel:${contactSettings.phone}`}>
+                {contactSettings.phone}
+              </a>
+            )}
+
+            {normalizedWhatsapp && (
+              <a
+                className="footerContactItem"
+                href={`https://wa.me/${normalizedWhatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp
+              </a>
+            )}
+
+            {contactSettings.email && (
+              <a className="footerContactItem" href={`mailto:${contactSettings.email}`}>
+                {contactSettings.email}
+              </a>
+            )}
+
+            {websiteUrl && (
+              <a
+                className="footerContactItem"
+                href={websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {websiteDisplayText}
+              </a>
+            )}
+
+            {contactSettings.googleMapsUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.googleMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Location | الموقع
+              </a>
+            )}
+
+            {contactSettings.instagramUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.instagramUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Instagram
+              </a>
+            )}
+
+            {contactSettings.tiktokUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.tiktokUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                TikTok
+              </a>
+            )}
+
+            {contactSettings.snapchatUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.snapchatUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Snapchat
+              </a>
+            )}
+
+            {contactSettings.xUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.xUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                X
+              </a>
+            )}
+
+            {contactSettings.facebookUrl && (
+              <a
+                className="footerContactItem"
+                href={contactSettings.facebookUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Facebook
+              </a>
+            )}
+          </div>
+        )}
       </footer>
 
       {lightboxImage && (
