@@ -1,9 +1,8 @@
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
-import Admin from './Admin.jsx'
 import { menuSections } from './menuData.js'
 import {
   clampImageOffset,
@@ -35,6 +34,12 @@ import {
   siteSettingsDocRef,
   themeSettingsDocRef,
 } from './admin/utils/branchPaths.js'
+
+// Code-split: the admin panel (product/category managers, drag-and-drop,
+// image crop editors, QR generation, ...) is a large bundle that only the
+// handful of logged-in admins ever need — lazy-loading it keeps every
+// public menu visitor's initial download small.
+const Admin = lazy(() => import('./Admin.jsx'))
 
 // /menu/:code opens that branch's independent menu; anything else (including
 // the bare "/") falls back to the original/default branch so every link
@@ -386,7 +391,11 @@ function App() {
   }, [isAdminPage, branchId])
 
   if (isAdminPage) {
-    return <Admin />
+    return (
+      <Suspense fallback={<main className="adminLoading" dir="rtl">جاري التحميل...</main>}>
+        <Admin />
+      </Suspense>
+    )
   }
 
   if (branchState.status === 'not-found') {
