@@ -30,6 +30,17 @@ export const defaultThemeSettings = {
   arabicFont: 'Cairo',
   englishFont: 'Montserrat',
   heroOverlayOpacity: 0.68,
+  // Image placement controls: scale is a zoom multiplier (1 = fit, no crop
+  // beyond the default fit mode); offsets are CSS position percentages
+  // (50/50 = centered), used as both object-position (logo) and the
+  // transform-origin the zoom scales from (hero).
+  heroScale: 1,
+  heroOffsetX: 50,
+  heroOffsetY: 50,
+  logoScale: 1,
+  logoOffsetX: 50,
+  logoOffsetY: 50,
+  logoFit: 'contain',
 }
 
 export const defaultContactSettings = {
@@ -139,6 +150,23 @@ export function convertGoogleDriveLink(url) {
   return trimmed
 }
 
+// ---------- Image placement (zoom / crop position) ----------
+
+export const IMAGE_SCALE_MIN = 1
+export const IMAGE_SCALE_MAX = 2.5
+
+export function clampImageScale(value) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return 1
+  return Math.min(IMAGE_SCALE_MAX, Math.max(IMAGE_SCALE_MIN, number))
+}
+
+export function clampImageOffset(value) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return 50
+  return Math.min(100, Math.max(0, number))
+}
+
 export function validateImageLink(url) {
   const trimmed = (url || '').trim()
 
@@ -191,14 +219,6 @@ function randomToken(length = 4) {
 export function createUniqueId(name) {
   const slug = slugifyName(name) || 'item'
   return `${slug}-${Date.now().toString(36)}${randomToken(4)}`
-}
-
-// kept as aliases for backward compatibility with any older call sites
-export function createProductId(name) {
-  return createUniqueId(name)
-}
-export function createEntityId(name) {
-  return createUniqueId(name)
 }
 
 export function generateOptionId() {

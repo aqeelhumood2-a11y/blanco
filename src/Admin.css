@@ -227,17 +227,6 @@
   color: #78667d;
 }
 
-.adminCardDisabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-  filter: grayscale(0.2);
-}
-
-.adminCardDisabled:hover {
-  transform: none;
-  box-shadow: 0 12px 35px rgba(58, 18, 70, 0.07);
-}
-
 .menuUploadSection {
   width: min(1100px, calc(100% - 34px));
   margin: 0 auto 25px;
@@ -855,28 +844,112 @@
   box-shadow: 0 0 0 3px rgba(107, 49, 125, 0.12);
 }
 
-/* Theme image previews reuse .adminImagePreview / .adminCurrentProductImage / .adminImagePlaceholder.
-   First preview block = hero background (wide, cover). Second preview block = logo (contain, smaller). */
-.adminThemeForm .adminImagePreview:nth-of-type(1) .adminCurrentProductImage,
-.adminThemeForm .adminImagePreview:nth-of-type(1) .adminImagePlaceholder {
+/* Theme image previews reuse .adminImagePreview / .adminCurrentProductImage / .adminImagePlaceholder,
+   scoped to explicit hero/logo group classes rather than sibling position. */
+.adminImageAdjustGroup {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eee7f1;
+}
+
+.adminImageAdjustGroup:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* transform:scale() on the preview <img> paints beyond its own box, so the
+   clip boundary has to live on this wrapper — not on the <img> itself. */
+.adminHeroImageGroup .adminImagePreview,
+.adminLogoImageGroup .adminImagePreview {
+  display: block;
+  position: relative;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.adminHeroImageGroup .adminImagePreview {
   width: 100%;
   max-width: 480px;
   height: 170px;
 }
 
-.adminThemeForm .adminImagePreview:nth-of-type(1) .adminCurrentProductImage {
-  object-fit: cover;
-}
-
-.adminThemeForm .adminImagePreview:nth-of-type(2) .adminCurrentProductImage,
-.adminThemeForm .adminImagePreview:nth-of-type(2) .adminImagePlaceholder {
+.adminLogoImageGroup .adminImagePreview {
   width: 130px;
   height: 130px;
 }
 
-.adminThemeForm .adminImagePreview:nth-of-type(2) .adminCurrentProductImage {
-  object-fit: contain;
+.adminHeroImageGroup .adminCurrentProductImage,
+.adminHeroImageGroup .adminImagePlaceholder,
+.adminLogoImageGroup .adminCurrentProductImage,
+.adminLogoImageGroup .adminImagePlaceholder {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  border-radius: 0;
+  border: 0;
+}
+
+.adminHeroImageGroup .adminCurrentProductImage {
+  object-fit: cover;
+}
+
+.adminLogoImageGroup .adminCurrentProductImage {
   padding: 8px;
+}
+
+.adminImageAdjustControls {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f9f6fb;
+  border: 1px solid #e4dbe9;
+}
+
+.adminImageAdjustControls label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #43204d;
+}
+
+.adminImageAdjustControls input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 6px;
+  background: #e4dbe9;
+  outline: none;
+  cursor: pointer;
+  accent-color: #6b317d;
+}
+
+.adminImageAdjustControls select {
+  padding: 10px 12px;
+  border: 1px solid #d9cfe0;
+  border-radius: 10px;
+  font-family: 'Cairo', sans-serif;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.adminResetImageButton {
+  justify-self: start;
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 16px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  color: #542065;
+  background: #eee6f1;
+}
+
+.adminResetImageButton:hover {
+  background: #e1d3e8;
 }
 
 .adminThemeForm button {
@@ -1018,109 +1091,6 @@
   text-align: left;
 }
 
-/* Kept for compatibility if this class is ever used instead of/alongside the span */
-.adminColorHexValue {
-  flex: 1;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #43204d;
-  text-transform: uppercase;
-  direction: ltr;
-  text-align: left;
-}
-
-/* ---------- Optional helper classes (kept for compatibility, not required by Admin.jsx) ---------- */
-
-.adminRangeField {
-  display: grid;
-  gap: 7px;
-  font-weight: 600;
-  color: #43204d;
-}
-
-.adminRangeField input[type="range"] {
-  width: 100%;
-  height: 6px;
-  border-radius: 6px;
-  background: #e4dbe9;
-  outline: none;
-  cursor: pointer;
-  accent-color: #6b317d;
-}
-
-.adminRangeField input[type="range"]:focus {
-  box-shadow: 0 0 0 3px rgba(107, 49, 125, 0.12);
-}
-
-.adminRangeValue {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: #6b317d;
-}
-
-.adminThemePreviewGrid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  margin-top: 6px;
-}
-
-.adminHeroPreview {
-  width: 100%;
-  min-height: 140px;
-  max-height: 200px;
-  object-fit: cover;
-  border-radius: 14px;
-  border: 1px solid #e4dbe9;
-  background: #f7f3f9;
-  display: block;
-}
-
-.adminLogoPreview {
-  width: 100%;
-  max-width: 120px;
-  height: auto;
-  object-fit: contain;
-  border-radius: 14px;
-  border: 1px solid #e4dbe9;
-  background: #f7f3f9;
-  padding: 8px;
-  display: block;
-  margin: 0 auto;
-}
-
-/* ---------- Loading / feedback messages ---------- */
-
-.adminLoadingText {
-  padding: 14px;
-  text-align: center;
-  color: #78667d;
-  font-weight: 600;
-}
-
-.adminSuccessMessage {
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #e8f8ee;
-  color: #176b39;
-  text-align: center;
-  font-weight: 600;
-}
-
-.adminErrorMessage {
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #ffeaea;
-  color: #a01616;
-  text-align: center;
-  font-weight: 600;
-}
-
 /* ---------- Responsive ---------- */
 
 @media (max-width: 700px) {
@@ -1172,18 +1142,13 @@
     width: 100%;
   }
 
-  .adminThemeForm .adminImagePreview:nth-of-type(1) .adminCurrentProductImage,
-  .adminThemeForm .adminImagePreview:nth-of-type(1) .adminImagePlaceholder {
+  .adminHeroImageGroup .adminImagePreview {
     max-width: 100%;
     height: 140px;
   }
 
-  .adminThemePreviewGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .adminLogoPreview {
-    max-width: 100%;
+  .adminResetImageButton {
+    width: 100%;
   }
 
   .adminColorInputRow {

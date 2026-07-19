@@ -20,10 +20,16 @@
   align-items: center;
   justify-content: center;
   padding: 55px 22px;
+  overflow: hidden;
+}
+
+.heroBackgroundLayer {
+  position: absolute;
+  inset: 0;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  overflow: hidden;
+  will-change: transform;
 }
 
 .heroShade {
@@ -380,6 +386,37 @@
 .productPrice span {
   font-size: 10px;
   font-weight: 600;
+}
+
+.productCard.outOfStock {
+  opacity: 0.72;
+}
+
+.productCard.outOfStock .productImage {
+  filter: grayscale(0.5);
+}
+
+.productBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px 0;
+}
+
+.productBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--primary-color, #582369);
+  color: #ffffff;
+  font-family: var(--english-font, 'Montserrat'), sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.outOfStockBadge {
+  background: #a52b2b;
 }
 
 /* ---------- Contact Section ---------- */

@@ -15,12 +15,16 @@ import ProductsManager from './admin/ProductsManager.jsx'
 import CategoriesManager from './admin/CategoriesManager.jsx'
 import {
   arabicFontOptions,
+  clampImageOffset,
+  clampImageScale,
   convertGoogleDriveLink,
   currencyOptions,
   defaultContactSettings,
   defaultSiteSettings,
   defaultThemeSettings,
   englishFontOptions,
+  IMAGE_SCALE_MAX,
+  IMAGE_SCALE_MIN,
   slugifyName,
 } from './admin/utils/adminUtils.js'
 
@@ -110,6 +114,14 @@ function Admin() {
   )
   const [heroImageError, setHeroImageError] = useState(false)
   const [logoImageError, setLogoImageError] = useState(false)
+
+  const [heroScale, setHeroScale] = useState(defaultThemeSettings.heroScale)
+  const [heroOffsetX, setHeroOffsetX] = useState(defaultThemeSettings.heroOffsetX)
+  const [heroOffsetY, setHeroOffsetY] = useState(defaultThemeSettings.heroOffsetY)
+  const [logoScale, setLogoScale] = useState(defaultThemeSettings.logoScale)
+  const [logoOffsetX, setLogoOffsetX] = useState(defaultThemeSettings.logoOffsetX)
+  const [logoOffsetY, setLogoOffsetY] = useState(defaultThemeSettings.logoOffsetY)
+  const [logoFit, setLogoFit] = useState(defaultThemeSettings.logoFit)
 
   const [contactLoading, setContactLoading] = useState(false)
   const [contactMessage, setContactMessage] = useState('')
@@ -366,6 +378,13 @@ function Admin() {
           ? data.heroOverlayOpacity
           : defaultThemeSettings.heroOverlayOpacity,
       )
+      setHeroScale(clampImageScale(data.heroScale ?? defaultThemeSettings.heroScale))
+      setHeroOffsetX(clampImageOffset(data.heroOffsetX ?? defaultThemeSettings.heroOffsetX))
+      setHeroOffsetY(clampImageOffset(data.heroOffsetY ?? defaultThemeSettings.heroOffsetY))
+      setLogoScale(clampImageScale(data.logoScale ?? defaultThemeSettings.logoScale))
+      setLogoOffsetX(clampImageOffset(data.logoOffsetX ?? defaultThemeSettings.logoOffsetX))
+      setLogoOffsetY(clampImageOffset(data.logoOffsetY ?? defaultThemeSettings.logoOffsetY))
+      setLogoFit(data.logoFit === 'cover' ? 'cover' : defaultThemeSettings.logoFit)
       setHeroImageError(false)
       setLogoImageError(false)
     } catch (themeError) {
@@ -408,6 +427,13 @@ function Admin() {
           arabicFont,
           englishFont,
           heroOverlayOpacity: Number(heroOverlayOpacity),
+          heroScale: clampImageScale(heroScale),
+          heroOffsetX: clampImageOffset(heroOffsetX),
+          heroOffsetY: clampImageOffset(heroOffsetY),
+          logoScale: clampImageScale(logoScale),
+          logoOffsetX: clampImageOffset(logoOffsetX),
+          logoOffsetY: clampImageOffset(logoOffsetY),
+          logoFit,
         },
         { merge: true },
       )
@@ -422,6 +448,19 @@ function Admin() {
     } finally {
       setSavingTheme(false)
     }
+  }
+
+  function resetHeroImageAdjustment() {
+    setHeroScale(defaultThemeSettings.heroScale)
+    setHeroOffsetX(defaultThemeSettings.heroOffsetX)
+    setHeroOffsetY(defaultThemeSettings.heroOffsetY)
+  }
+
+  function resetLogoImageAdjustment() {
+    setLogoScale(defaultThemeSettings.logoScale)
+    setLogoOffsetX(defaultThemeSettings.logoOffsetX)
+    setLogoOffsetY(defaultThemeSettings.logoOffsetY)
+    setLogoFit(defaultThemeSettings.logoFit)
   }
 
   async function loadContactSettings() {
@@ -1052,7 +1091,7 @@ function Admin() {
               className="adminThemeForm"
               onSubmit={saveThemeSettings}
             >
-              <div className="adminSiteSettingsGrid">
+              <div className="adminImageAdjustGroup adminHeroImageGroup">
                 <label className="adminImageUrlLabel">
                   رابط خلفية الهيدر
 
@@ -1067,6 +1106,76 @@ function Admin() {
                   />
                 </label>
 
+                <div className="adminImagePreview">
+                  {heroPreviewUrl && !heroImageError ? (
+                    <img
+                      className="adminCurrentProductImage"
+                      src={heroPreviewUrl}
+                      alt="معاينة خلفية الهيدر"
+                      style={{
+                        objectFit: 'cover',
+                        transform: `scale(${clampImageScale(heroScale)})`,
+                        transformOrigin: `${clampImageOffset(heroOffsetX)}% ${clampImageOffset(heroOffsetY)}%`,
+                      }}
+                      onError={() => setHeroImageError(true)}
+                    />
+                  ) : (
+                    <div className="adminImagePlaceholder">
+                      لا توجد خلفية
+                    </div>
+                  )}
+                </div>
+
+                {heroPreviewUrl && (
+                  <div className="adminImageAdjustControls">
+                    <label>
+                      التكبير: {clampImageScale(heroScale).toFixed(2)}×
+                      <input
+                        type="range"
+                        min={IMAGE_SCALE_MIN}
+                        max={IMAGE_SCALE_MAX}
+                        step="0.05"
+                        value={heroScale}
+                        onChange={(event) => setHeroScale(event.target.value)}
+                      />
+                    </label>
+
+                    <label>
+                      الموضع الأفقي: {clampImageOffset(heroOffsetX)}%
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={heroOffsetX}
+                        onChange={(event) => setHeroOffsetX(event.target.value)}
+                      />
+                    </label>
+
+                    <label>
+                      الموضع الرأسي: {clampImageOffset(heroOffsetY)}%
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={heroOffsetY}
+                        onChange={(event) => setHeroOffsetY(event.target.value)}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      className="adminResetImageButton"
+                      onClick={resetHeroImageAdjustment}
+                    >
+                      إعادة ضبط الصورة
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="adminImageAdjustGroup adminLogoImageGroup">
                 <label className="adminImageUrlLabel">
                   رابط الشعار
 
@@ -1080,32 +1189,83 @@ function Admin() {
                     placeholder="https://... أو رابط Google Drive"
                   />
                 </label>
-              </div>
 
-              <div className="adminImagePreview">
-                {heroPreviewUrl && !heroImageError ? (
-                  <img
-                    className="adminCurrentProductImage"
-                    src={heroPreviewUrl}
-                    alt="معاينة خلفية الهيدر"
-                    onError={() => setHeroImageError(true)}
-                  />
-                ) : (
-                  <div className="adminImagePlaceholder">
-                    لا توجد خلفية
-                  </div>
-                )}
+                <div className="adminImagePreview">
+                  {logoPreviewUrl && !logoImageError ? (
+                    <img
+                      className="adminCurrentProductImage"
+                      src={logoPreviewUrl}
+                      alt="معاينة الشعار"
+                      style={{
+                        objectFit: logoFit === 'cover' ? 'cover' : 'contain',
+                        objectPosition: `${clampImageOffset(logoOffsetX)}% ${clampImageOffset(logoOffsetY)}%`,
+                        transform: `scale(${clampImageScale(logoScale)})`,
+                      }}
+                      onError={() => setLogoImageError(true)}
+                    />
+                  ) : (
+                    <div className="adminImagePlaceholder">
+                      لا يوجد شعار
+                    </div>
+                  )}
+                </div>
 
-                {logoPreviewUrl && !logoImageError ? (
-                  <img
-                    className="adminCurrentProductImage"
-                    src={logoPreviewUrl}
-                    alt="معاينة الشعار"
-                    onError={() => setLogoImageError(true)}
-                  />
-                ) : (
-                  <div className="adminImagePlaceholder">
-                    لا يوجد شعار
+                {logoPreviewUrl && (
+                  <div className="adminImageAdjustControls">
+                    <label>
+                      طريقة العرض
+                      <select
+                        value={logoFit}
+                        onChange={(event) => setLogoFit(event.target.value)}
+                      >
+                        <option value="contain">احتواء كامل (بدون قص)</option>
+                        <option value="cover">تعبئة الإطار (قص عند الحاجة)</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      التكبير: {clampImageScale(logoScale).toFixed(2)}×
+                      <input
+                        type="range"
+                        min={IMAGE_SCALE_MIN}
+                        max={IMAGE_SCALE_MAX}
+                        step="0.05"
+                        value={logoScale}
+                        onChange={(event) => setLogoScale(event.target.value)}
+                      />
+                    </label>
+
+                    <label>
+                      الموضع الأفقي: {clampImageOffset(logoOffsetX)}%
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={logoOffsetX}
+                        onChange={(event) => setLogoOffsetX(event.target.value)}
+                      />
+                    </label>
+
+                    <label>
+                      الموضع الرأسي: {clampImageOffset(logoOffsetY)}%
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={logoOffsetY}
+                        onChange={(event) => setLogoOffsetY(event.target.value)}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      className="adminResetImageButton"
+                      onClick={resetLogoImageAdjustment}
+                    >
+                      إعادة ضبط الصورة
+                    </button>
                   </div>
                 )}
               </div>

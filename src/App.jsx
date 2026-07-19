@@ -11,6 +11,13 @@ import './App.css'
 import Admin from './Admin.jsx'
 import { db } from './firebase.js'
 import { menuSections } from './menuData.js'
+import {
+  clampImageOffset,
+  clampImageScale,
+  convertGoogleDriveLink,
+  getActivePrice,
+  isProductVisibleNow,
+} from './admin/utils/adminUtils.js'
 
 const DEFAULT_SITE_SETTINGS = {
   siteNameEn: 'RESTAURANT NAME',
@@ -29,6 +36,7 @@ const DEFAULT_THEME_SETTINGS = {
   heroBackgroundUrl: '',
   logoUrl: '',
   pageBackgroundColor: '#f7f3f8',
+  heroBackgroundColor: '#28102f',
   primaryColor: '#582369',
   buttonColor: '#542065',
   priceBackgroundColor: '#582369',
@@ -54,44 +62,6 @@ const DEFAULT_CONTACT_SETTINGS = {
   facebookUrl: '',
 }
 
-// Converts a Google Drive share/view link into a direct-viewable image URL.
-// Falls back to the original URL when it isn't a recognizable Drive link.
-function getDirectImageUrl(rawUrl) {
-  if (!rawUrl || typeof rawUrl !== 'string') {
-    return ''
-  }
-
-  const url = rawUrl.trim()
-
-  if (!url) {
-    return ''
-  }
-
-  if (!url.includes('drive.google.com')) {
-    return url
-  }
-
-  let fileId = ''
-
-  const fileDMatch = url.match(/\/file\/d\/([^/]+)/)
-  if (fileDMatch && fileDMatch[1]) {
-    fileId = fileDMatch[1]
-  }
-
-  if (!fileId) {
-    const idParamMatch = url.match(/[?&]id=([^&]+)/)
-    if (idParamMatch && idParamMatch[1]) {
-      fileId = idParamMatch[1]
-    }
-  }
-
-  if (!fileId) {
-    return url
-  }
-
-  return `https://lh3.googleusercontent.com/d/${fileId}`
-}
-
 // Removes spaces, plus signs, dashes and parentheses from a WhatsApp number.
 function normalizeWhatsappNumber(rawNumber) {
   if (!rawNumber || typeof rawNumber !== 'string') {
@@ -106,7 +76,7 @@ function normalizeWhatsappNumber(rawNumber) {
 }
 
 function ProductImage({ src, alt, onClick, failed, onError }) {
-  const resolvedSrc = getDirectImageUrl(src)
+  const resolvedSrc = convertGoogleDriveLink(src)
   const isClickable = Boolean(resolvedSrc) && !failed
 
   function handleKeyDown(event) {
@@ -215,6 +185,11 @@ function App() {
     setLightboxImage(null)
   }, [])
 
+  // Retry a corrected logo URL instead of staying stuck on the previous failure.
+  useEffect(() => {
+    setLogoFailed(false)
+  }, [themeSettings.logoUrl])
+
   useEffect(() => {
     if (isAdminPage) {
       setMenuLoading(false)
@@ -303,6 +278,13 @@ heroBackgroundColor:
               typeof data.heroOverlayOpacity === 'number'
                 ? data.heroOverlayOpacity
                 : DEFAULT_THEME_SETTINGS.heroOverlayOpacity,
+            heroScale: clampImageScale(data.heroScale ?? DEFAULT_THEME_SETTINGS.heroScale),
+            heroOffsetX: clampImageOffset(data.heroOffsetX ?? DEFAULT_THEME_SETTINGS.heroOffsetX),
+            heroOffsetY: clampImageOffset(data.heroOffsetY ?? DEFAULT_THEME_SETTINGS.heroOffsetY),
+            logoScale: clampImageScale(data.logoScale ?? DEFAULT_THEME_SETTINGS.logoScale),
+            logoOffsetX: clampImageOffset(data.logoOffsetX ?? DEFAULT_THEME_SETTINGS.logoOffsetX),
+            logoOffsetY: clampImageOffset(data.logoOffsetY ?? DEFAULT_THEME_SETTINGS.logoOffsetY),
+            logoFit: data.logoFit === 'cover' ? 'cover' : DEFAULT_THEME_SETTINGS.logoFit,
           })
         }
       } catch (themeError) {
@@ -372,7 +354,7 @@ heroBackgroundColor:
                 id: productDocument.id,
                 ...productDocument.data(),
               }))
-              .filter((product) => product.visible !== false)
+              .filter((product) => isProductVisibleNow(product))
               .sort(
                 (productA, productB) =>
                   (productA.order || 0) - (productB.order || 0),
@@ -427,16 +409,22 @@ heroBackgroundColor:
 
  const firstSectionId = firebaseMenu[0]?.id || ''
 
-  const heroBackgroundUrl = getDirectImageUrl(themeSettings.heroBackgroundUrl)
-  const resolvedHeroBackground = heroBackgroundUrl
-  ? `url(${heroBackgroundUrl})`
-  : 'none'
-const heroStyle = {
-  backgroundImage: resolvedHeroBackground,
-  backgroundColor: themeSettings.heroBackgroundColor || '#28102f',
-}
-  const logoUrl = getDirectImageUrl(themeSettings.logoUrl)
+  const heroBackgroundUrl = convertGoogleDriveLink(themeSettings.heroBackgroundUrl)
+  const heroStyle = {
+    backgroundColor: themeSettings.heroBackgroundColor || '#28102f',
+  }
+  const heroBackgroundLayerStyle = {
+    backgroundImage: `url(${heroBackgroundUrl})`,
+    transform: `scale(${clampImageScale(themeSettings.heroScale)})`,
+    transformOrigin: `${clampImageOffset(themeSettings.heroOffsetX)}% ${clampImageOffset(themeSettings.heroOffsetY)}%`,
+  }
+  const logoUrl = convertGoogleDriveLink(themeSettings.logoUrl)
   const showLogo = Boolean(logoUrl) && !logoFailed
+  const logoStyle = {
+    objectFit: themeSettings.logoFit === 'cover' ? 'cover' : 'contain',
+    objectPosition: `${clampImageOffset(themeSettings.logoOffsetX)}% ${clampImageOffset(themeSettings.logoOffsetY)}%`,
+    transform: `scale(${clampImageScale(themeSettings.logoScale)})`,
+  }
 
   const hasContactInfo =
     Boolean(contactSettings.phone) ||
@@ -476,6 +464,10 @@ if (themeLoading) {
         className="hero"
         style={heroStyle}
       >
+        {heroBackgroundUrl && (
+          <div className="heroBackgroundLayer" style={heroBackgroundLayerStyle} />
+        )}
+
         <div
           className="heroShade"
           style={{ opacity: themeSettings.heroOverlayOpacity }}
@@ -487,6 +479,7 @@ if (themeLoading) {
               className="heroLogo"
               src={logoUrl}
               alt={siteSettings.siteNameEn}
+              style={logoStyle}
               onError={() => setLogoFailed(true)}
             />
           )}
@@ -569,11 +562,16 @@ if (themeLoading) {
               {section.products.map((product) => {
                 const productKey = product.id || `${section.id}-${product.nameEn}`
                 const productAlt = product.nameAr || product.nameEn
-                const directImageUrl = getDirectImageUrl(product.imageUrl)
+                const directImageUrl = convertGoogleDriveLink(product.imageUrl)
                 const hasFailed = Boolean(failedImages[productKey])
 
+                const isOutOfStock = product.availability === 'out_of_stock'
+
                 return (
-                  <article className="productCard" key={productKey}>
+                  <article
+                    className={`productCard${isOutOfStock ? ' outOfStock' : ''}`}
+                    key={productKey}
+                  >
                     <ProductImage
                       src={product.imageUrl}
                       alt={productAlt}
@@ -592,13 +590,28 @@ if (themeLoading) {
                       }
                     />
 
+                    {(product.badges?.length > 0 || isOutOfStock) && (
+                      <div className="productBadges">
+                        {isOutOfStock && (
+                          <span className="productBadge outOfStockBadge">
+                            نفدت الكمية
+                          </span>
+                        )}
+                        {product.badges?.map((badge) => (
+                          <span className="productBadge" key={badge}>
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="productDetails">
                       <h3>{product.nameEn}</h3>
                       <p>{product.nameAr}</p>
 
                       {siteSettings.showPrices && (
                         <div className="productPrice">
-                          <strong>{product.price}</strong>
+                          <strong>{getActivePrice(product)}</strong>
                           <span>{siteSettings.currency}</span>
                         </div>
                       )}
