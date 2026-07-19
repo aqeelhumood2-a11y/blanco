@@ -140,6 +140,13 @@ function Admin() {
   const themeRef = useRef(null)
   const contactRef = useRef(null)
 
+  // Synchronous locks against duplicate submissions — see ProductsManager
+  // for why a ref is required here instead of the saving*/submitting state.
+  const loginLock = useRef(false)
+  const savingSettingsLock = useRef(false)
+  const savingThemeLock = useRef(false)
+  const savingContactLock = useRef(false)
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
@@ -285,6 +292,8 @@ function Admin() {
 
   async function saveSiteSettings(event) {
     event.preventDefault()
+    if (savingSettingsLock.current) return
+    savingSettingsLock.current = true
 
     setSavingSettings(true)
     setError('')
@@ -313,6 +322,7 @@ function Admin() {
       console.error(saveError)
       setError('صار خطأ أثناء حفظ إعدادات الموقع')
     } finally {
+      savingSettingsLock.current = false
       setSavingSettings(false)
     }
   }
@@ -397,6 +407,8 @@ function Admin() {
 
   async function saveThemeSettings(event) {
     event.preventDefault()
+    if (savingThemeLock.current) return
+    savingThemeLock.current = true
 
     setSavingTheme(true)
     setError('')
@@ -446,6 +458,7 @@ function Admin() {
       console.error(saveError)
       setError('صار خطأ أثناء حفظ إعدادات المظهر')
     } finally {
+      savingThemeLock.current = false
       setSavingTheme(false)
     }
   }
@@ -502,6 +515,8 @@ function Admin() {
 
   async function saveContactSettings(event) {
     event.preventDefault()
+    if (savingContactLock.current) return
+    savingContactLock.current = true
 
     setSavingContact(true)
     setError('')
@@ -528,12 +543,15 @@ function Admin() {
       console.error(saveError)
       setError('صار خطأ أثناء حفظ بيانات التواصل')
     } finally {
+      savingContactLock.current = false
       setSavingContact(false)
     }
   }
 
   async function handleLogin(event) {
     event.preventDefault()
+    if (loginLock.current) return
+    loginLock.current = true
 
     setError('')
     setSubmitting(true)
@@ -548,6 +566,7 @@ function Admin() {
       console.error(loginError)
       setError('الإيميل أو كلمة المرور غير صحيحة')
     } finally {
+      loginLock.current = false
       setSubmitting(false)
     }
   }

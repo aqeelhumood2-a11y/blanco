@@ -200,6 +200,13 @@ function ProductsManager({ onBack, currency }) {
   const productFormRef = useRef(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  // Synchronous locks against duplicate submissions: React state guards
+  // (savingProduct/bulkProcessing) are batched and can't be trusted to stop
+  // two clicks that land in the same tick before a re-render disables the
+  // button — a ref updates immediately, so it does.
+  const savingProductLock = useRef(false)
+  const bulkActionLock = useRef(false)
+
   useEffect(() => {
     loadProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,7 +294,8 @@ function ProductsManager({ onBack, currency }) {
 
   async function handleSaveProduct(event) {
     event.preventDefault()
-    if (savingProduct) return
+    if (savingProductLock.current) return
+    savingProductLock.current = true
 
     setSavingProduct(true)
     setError('')
@@ -329,6 +337,7 @@ function ProductsManager({ onBack, currency }) {
       console.error(saveError)
       setError(saveError.message || 'صار خطأ أثناء حفظ المنتج')
     } finally {
+      savingProductLock.current = false
       setSavingProduct(false)
     }
   }
@@ -420,9 +429,10 @@ function ProductsManager({ onBack, currency }) {
   }
 
   async function handleBulkDelete() {
-    if (selectedProducts.length === 0 || bulkProcessing) return
+    if (selectedProducts.length === 0 || bulkActionLock.current) return
     const confirmed = window.confirm(`حذف ${selectedProducts.length} منتج نهائيًا؟`)
     if (!confirmed) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -436,12 +446,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر حذف المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkVisibility(visible) {
-    if (selectedProducts.length === 0 || bulkProcessing) return
+    if (selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -455,12 +467,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر تحديث المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkCategoryChange() {
-    if (!bulkCategoryTarget || selectedProducts.length === 0 || bulkProcessing) return
+    if (!bulkCategoryTarget || selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -475,12 +489,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError(bulkError.message || 'تعذر نقل المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkBadgeChange() {
-    if (!bulkBadgeTarget || selectedProducts.length === 0 || bulkProcessing) return
+    if (!bulkBadgeTarget || selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -495,6 +511,7 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر تحديث الشارات')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
