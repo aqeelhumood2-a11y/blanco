@@ -329,7 +329,7 @@ export function useProducts() {
   }
 
   async function duplicateProduct(product) {
-    const { id, categoryId, categoryNameEn, categoryNameAr, ...rest } = product
+    const { id: _id, categoryId: _categoryId, categoryNameEn: _categoryNameEn, categoryNameAr: _categoryNameAr, ...rest } = product
 
     const siblingProducts = products.filter((item) => item.categoryId === product.categoryId)
     const newId = createUniqueId(product.nameEn)
@@ -416,7 +416,7 @@ export function useProducts() {
     const operationBuilders = []
 
     for (const product of relevantProducts) {
-      const { id, categoryId, categoryNameEn, categoryNameAr, ...rest } = product
+      const { id, categoryId: _categoryId, categoryNameEn: _categoryNameEn, categoryNameAr: _categoryNameAr, ...rest } = product
 
       // eslint-disable-next-line no-await-in-loop
       const collisionSnap = await getDoc(doc(db, 'categories', newCategoryId, 'products', id))

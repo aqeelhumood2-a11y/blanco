@@ -128,6 +128,10 @@ function CategoriesManager({ onBack }) {
   const categoryFormRef = useRef(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  // See ProductsManager for why this needs to be a ref, not just savingCategory state.
+  const savingCategoryLock = useRef(false)
+  const movingProductsLock = useRef(false)
+
   const dragEnabled = categories.length > 1
 
   useEffect(() => {
@@ -173,7 +177,8 @@ function CategoriesManager({ onBack }) {
 
   async function handleSaveCategory(event) {
     event.preventDefault()
-    if (savingCategory) return
+    if (savingCategoryLock.current) return
+    savingCategoryLock.current = true
 
     setSavingCategory(true)
     setError('')
@@ -198,6 +203,7 @@ function CategoriesManager({ onBack }) {
       console.error(saveError)
       setError(saveError.message || 'صار خطأ أثناء حفظ القسم')
     } finally {
+      savingCategoryLock.current = false
       setSavingCategory(false)
     }
   }
@@ -267,7 +273,8 @@ function CategoriesManager({ onBack }) {
   }
 
   async function handleConfirmMove() {
-    if (!moveTargetId || !moveSourceCategory || movingProducts) return
+    if (!moveTargetId || !moveSourceCategory || movingProductsLock.current) return
+    movingProductsLock.current = true
 
     setError('')
     setMovingProducts(true)
@@ -281,6 +288,7 @@ function CategoriesManager({ onBack }) {
       console.error(moveError)
       setError(moveError.message || 'تعذر نقل المنتجات')
     } finally {
+      movingProductsLock.current = false
       setMovingProducts(false)
     }
   }

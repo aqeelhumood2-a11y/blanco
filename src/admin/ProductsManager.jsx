@@ -200,6 +200,13 @@ function ProductsManager({ onBack, currency }) {
   const productFormRef = useRef(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  // Synchronous locks against duplicate submissions: React state guards
+  // (savingProduct/bulkProcessing) are batched and can't be trusted to stop
+  // two clicks that land in the same tick before a re-render disables the
+  // button — a ref updates immediately, so it does.
+  const savingProductLock = useRef(false)
+  const bulkActionLock = useRef(false)
+
   useEffect(() => {
     loadProducts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,7 +294,8 @@ function ProductsManager({ onBack, currency }) {
 
   async function handleSaveProduct(event) {
     event.preventDefault()
-    if (savingProduct) return
+    if (savingProductLock.current) return
+    savingProductLock.current = true
 
     setSavingProduct(true)
     setError('')
@@ -311,6 +319,16 @@ function ProductsManager({ onBack, currency }) {
         priceSchedule,
       })
 
+      if (editingProduct) {
+        // Clear any stale broken-image flag so a corrected image URL is retried
+        // instead of continuing to show "unavailable" from the previous value.
+        setImageErrorIds((prev) => {
+          const next = { ...prev }
+          delete next[rowKey(editingProduct)]
+          return next
+        })
+      }
+
       setShowProductForm(false)
       resetProductForm()
 
@@ -319,6 +337,7 @@ function ProductsManager({ onBack, currency }) {
       console.error(saveError)
       setError(saveError.message || 'صار خطأ أثناء حفظ المنتج')
     } finally {
+      savingProductLock.current = false
       setSavingProduct(false)
     }
   }
@@ -410,9 +429,10 @@ function ProductsManager({ onBack, currency }) {
   }
 
   async function handleBulkDelete() {
-    if (selectedProducts.length === 0 || bulkProcessing) return
+    if (selectedProducts.length === 0 || bulkActionLock.current) return
     const confirmed = window.confirm(`حذف ${selectedProducts.length} منتج نهائيًا؟`)
     if (!confirmed) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -426,12 +446,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر حذف المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkVisibility(visible) {
-    if (selectedProducts.length === 0 || bulkProcessing) return
+    if (selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -445,12 +467,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر تحديث المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkCategoryChange() {
-    if (!bulkCategoryTarget || selectedProducts.length === 0 || bulkProcessing) return
+    if (!bulkCategoryTarget || selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -465,12 +489,14 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError(bulkError.message || 'تعذر نقل المنتجات المحددة')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
 
   async function handleBulkBadgeChange() {
-    if (!bulkBadgeTarget || selectedProducts.length === 0 || bulkProcessing) return
+    if (!bulkBadgeTarget || selectedProducts.length === 0 || bulkActionLock.current) return
+    bulkActionLock.current = true
 
     setError('')
     setProductSuccessMessage('')
@@ -485,6 +511,7 @@ function ProductsManager({ onBack, currency }) {
       console.error(bulkError)
       setError('تعذر تحديث الشارات')
     } finally {
+      bulkActionLock.current = false
       setBulkProcessing(false)
     }
   }
@@ -728,32 +755,32 @@ function ProductsManager({ onBack, currency }) {
           {filteredProducts.length === 0 ? (
             <p>لا توجد منتجات مطابقة</p>
           ) : (
-            <table className="adminProductsTable">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredProducts.length > 0 &&
-                        filteredProducts.every((p) => selectedKeys.includes(rowKey(p)))
-                      }
-                      onChange={toggleSelectAll}
-                      aria-label="تحديد كل المنتجات الظاهرة"
-                    />
-                  </th>
-                  <th>الصورة</th>
-                  <th>المنتج</th>
-                  <th>القسم</th>
-                  <th>السعر</th>
-                  <th>الحالة</th>
-                  <th>التحكم</th>
-                </tr>
-              </thead>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <table className="adminProductsTable">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredProducts.length > 0 &&
+                          filteredProducts.every((p) => selectedKeys.includes(rowKey(p)))
+                        }
+                        onChange={toggleSelectAll}
+                        aria-label="تحديد كل المنتجات الظاهرة"
+                      />
+                    </th>
+                    <th>الصورة</th>
+                    <th>المنتج</th>
+                    <th>القسم</th>
+                    <th>السعر</th>
+                    <th>الحالة</th>
+                    <th>التحكم</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <tbody>
                   <SortableContext items={filteredProducts.map(rowKey)} strategy={verticalListSortingStrategy}>
                     {filteredProducts.map((product) => {
                       const key = rowKey(product)
@@ -777,9 +804,9 @@ function ProductsManager({ onBack, currency }) {
                       )
                     })}
                   </SortableContext>
-                </DndContext>
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </DndContext>
           )}
         </div>
       )}
