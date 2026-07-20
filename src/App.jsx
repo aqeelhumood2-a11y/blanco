@@ -184,6 +184,7 @@ function App() {
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
   const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
   const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
@@ -197,6 +198,23 @@ function App() {
   useEffect(() => {
     setLogoFailed(false)
   }, [themeSettings.logoUrl])
+
+  // Drives the header's transparent-over-hero → cream/blur/shadow transition
+  // as the visitor scrolls; purely presentational, no data or routing effect.
+  useEffect(() => {
+    if (isAdminPage) {
+      return
+    }
+
+    function handleScroll() {
+      setIsHeaderScrolled(window.scrollY > 24)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isAdminPage])
 
   useEffect(() => {
     if (isAdminPage) {
@@ -478,7 +496,7 @@ function App() {
 
   const heroBackgroundUrl = convertGoogleDriveLink(themeSettings.heroBackgroundUrl)
   const heroStyle = {
-    backgroundColor: themeSettings.heroBackgroundColor || '#e8ddc8',
+    backgroundColor: themeSettings.heroBackgroundColor || '#ddd0be',
   }
   const heroBackgroundLayerStyle = {
     backgroundImage: `url(${heroBackgroundUrl})`,
@@ -649,7 +667,9 @@ if (themeLoading) {
       </section>
 
       {firebaseMenu.length > 0 && (
-        <nav className="categoryNavigation">
+        <nav
+          className={`categoryNavigation${isHeaderScrolled ? ' categoryNavigation--scrolled' : ''}`}
+        >
           <div className="categoryNavigationInner">
             {firebaseMenu.map((section) => (
               <a key={section.id} href={`#${section.id}`} className="navItem">
@@ -713,43 +733,40 @@ if (themeLoading) {
                     className={`productCard${isOutOfStock ? ' outOfStock' : ''}`}
                     key={productKey}
                   >
-                    <ProductImage
-                      src={product.imageUrl}
-                      alt={productAlt}
-                      crop={product.imageCrop}
-                      failed={hasFailed}
-                      onError={() =>
-                        setFailedImages((previous) => ({
-                          ...previous,
-                          [productKey]: true,
-                        }))
-                      }
-                      onClick={() =>
-                        setLightboxImage({
-                          url: directImageUrl,
-                          alt: productAlt,
-                        })
-                      }
-                    />
+                    <div className="productImageWrap">
+                      <ProductImage
+                        src={product.imageUrl}
+                        alt={productAlt}
+                        crop={product.imageCrop}
+                        failed={hasFailed}
+                        onError={() =>
+                          setFailedImages((previous) => ({
+                            ...previous,
+                            [productKey]: true,
+                          }))
+                        }
+                        onClick={() =>
+                          setLightboxImage({
+                            url: directImageUrl,
+                            alt: productAlt,
+                          })
+                        }
+                      />
 
-                    {(product.badges?.length > 0 || isOutOfStock) && (
-                      <div className="productBadges">
-                        {isOutOfStock && (
-                          <span className="productBadge outOfStockBadge">
-                            نفدت الكمية
-                          </span>
-                        )}
-                        {product.badges?.map((badge) => (
-                          <span className="productBadge" key={badge}>
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="productDetails">
-                      <h3>{product.nameEn}</h3>
-                      <p>{product.nameAr}</p>
+                      {(product.badges?.length > 0 || isOutOfStock) && (
+                        <div className="productBadges">
+                          {isOutOfStock && (
+                            <span className="productBadge outOfStockBadge">
+                              نفدت الكمية
+                            </span>
+                          )}
+                          {product.badges?.map((badge) => (
+                            <span className="productBadge" key={badge}>
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {siteSettings.showPrices && (
                         <div className="productPrice">
@@ -757,6 +774,11 @@ if (themeLoading) {
                           <span>{siteSettings.currency}</span>
                         </div>
                       )}
+                    </div>
+
+                    <div className="productDetails">
+                      <h3>{product.nameEn}</h3>
+                      <p>{product.nameAr}</p>
                     </div>
                   </article>
                 )
