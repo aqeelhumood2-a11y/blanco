@@ -23,6 +23,7 @@ import {
   getActivePrice,
   imageCropToStyle,
   isProductVisibleNow,
+  migrateLegacyThemeColors,
   normalizeHeroHours,
   normalizeWeeklyHours,
 } from './admin/utils/adminUtils.js'
@@ -269,7 +270,11 @@ function App() {
         const themeSnapshot = await getDoc(themeSettingsDocRef(branchId))
 
         if (!cancelled && themeSnapshot.exists()) {
-          const data = themeSnapshot.data()
+          const rawData = themeSnapshot.data()
+          const data =
+            branchId === DEFAULT_BRANCH_ID
+              ? migrateLegacyThemeColors(rawData)
+              : rawData
 
           setThemeSettings({
             ...DEFAULT_THEME_SETTINGS,
@@ -473,7 +478,7 @@ function App() {
 
   const heroBackgroundUrl = convertGoogleDriveLink(themeSettings.heroBackgroundUrl)
   const heroStyle = {
-    backgroundColor: themeSettings.heroBackgroundColor || '#28102f',
+    backgroundColor: themeSettings.heroBackgroundColor || '#e8ddc8',
   }
   const heroBackgroundLayerStyle = {
     backgroundImage: `url(${heroBackgroundUrl})`,
@@ -760,102 +765,6 @@ if (themeLoading) {
           </section>
         ))}
       </div>
-
-      {hasContactInfo && (
-        <section className="contactSection">
-          <h2 className="contactSectionTitle">
-            {siteSettings.contactHeadingEn} | {siteSettings.contactHeadingAr}
-          </h2>
-
-          <div className="contactLinks">
-            {contactSettings.phone && (
-              <a
-                className="contactLink contactPhone"
-                href={`tel:${contactSettings.phone}`}
-              >
-                Call | اتصال
-              </a>
-            )}
-
-            {normalizedWhatsapp && (
-              <a
-                className="contactLink contactWhatsapp"
-                href={`https://wa.me/${normalizedWhatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                WhatsApp | واتساب
-              </a>
-            )}
-
-            {contactSettings.googleMapsUrl && (
-              <a
-                className="contactLink contactMaps"
-                href={contactSettings.googleMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Location | الموقع
-              </a>
-            )}
-
-            {contactSettings.instagramUrl && (
-              <a
-                className="contactLink contactSocial"
-                href={contactSettings.instagramUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Instagram
-              </a>
-            )}
-
-            {contactSettings.tiktokUrl && (
-              <a
-                className="contactLink contactSocial"
-                href={contactSettings.tiktokUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                TikTok
-              </a>
-            )}
-
-            {contactSettings.snapchatUrl && (
-              <a
-                className="contactLink contactSocial"
-                href={contactSettings.snapchatUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Snapchat
-              </a>
-            )}
-
-            {contactSettings.xUrl && (
-              <a
-                className="contactLink contactSocial"
-                href={contactSettings.xUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                X
-              </a>
-            )}
-
-            {contactSettings.facebookUrl && (
-              <a
-                className="contactLink contactSocial"
-                href={contactSettings.facebookUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Facebook
-              </a>
-            )}
-          </div>
-        </section>
-      )}
 
       <footer className="footer">
         <p>{siteSettings.footerText}</p>

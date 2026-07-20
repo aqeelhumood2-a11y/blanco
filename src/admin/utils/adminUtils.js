@@ -17,20 +17,22 @@ export const defaultSiteSettings = {
   contactHeadingAr: 'تواصل معنا',
 }
 
+// BLANCO brand palette — warm coffee tones. See defaultThemeSettings below
+// for how each brand color maps to a specific UI role.
 export const defaultThemeSettings = {
   heroBackgroundUrl: '',
   logoUrl: '',
-  pageBackgroundColor: '#f7f3f8',
-  heroBackgroundColor: '#28102f',
-  primaryColor: '#582369',
-  buttonColor: '#542065',
-  priceBackgroundColor: '#582369',
-  priceTextColor: '#ffffff',
-  headingColor: '#35123f',
-  textColor: '#26132e',
-  mutedTextColor: '#77637d',
-  navigationBackgroundColor: '#ffffff',
-  footerBackgroundColor: '#28102f',
+  pageBackgroundColor: '#F5F1E6',
+  heroBackgroundColor: '#E8DDC8',
+  primaryColor: '#5A3A28',
+  buttonColor: '#5A3A28',
+  priceBackgroundColor: '#B8905B',
+  priceTextColor: '#3D281C',
+  headingColor: '#3D281C',
+  textColor: '#3B2A20',
+  mutedTextColor: '#6A5749',
+  navigationBackgroundColor: 'rgba(245, 241, 230, 0.82)',
+  footerBackgroundColor: '#2F1C14',
   arabicFont: 'Cairo',
   englishFont: 'Montserrat',
   heroOverlayOpacity: 0.68,
@@ -47,11 +49,11 @@ export const defaultThemeSettings = {
   logoOffsetY: 50,
   logoFit: 'contain',
   // Additional colors
-  buttonTextColor: '#ffffff',
-  borderColor: '#e4dbe9',
-  menuBackgroundColor: '#f7f3f8',
-  footerTextColor: '#ffffff',
-  accentColor: '#582369',
+  buttonTextColor: '#FFFCF8',
+  borderColor: '#DDD0BE',
+  menuBackgroundColor: '#F5F1E6',
+  footerTextColor: '#F5F1E6',
+  accentColor: '#B8905B',
   // Layout controls
   logoPosition: 'top-left',
   logoSize: 90,
@@ -62,11 +64,45 @@ export const defaultThemeSettings = {
   sectionSpacingScale: 1,
   buttonSize: 'md',
   textScale: 1,
-  // Hero/header text + opening-hours-box colors. Defaults are chosen to
-  // exactly match (title/text/arrow) or closely approximate (the box's
-  // previously-translucent background/border, since a native color input
-  // can't represent transparency) the look these elements already had
-  // before they became independently editable.
+  // Hero/header text + opening-hours-box colors.
+  heroTitleColor: '#3D281C',
+  heroTextEnColor: '#5A3A28',
+  heroTextArColor: '#5A3A28',
+  heroHoursBgColor: '#FFFCF8',
+  heroHoursBorderColor: '#DDD0BE',
+  heroHoursTextColor: '#3D281C',
+  heroDownArrowColor: '#5A3A28',
+}
+
+// Exact color values shipped as defaults before the BLANCO brand redesign.
+// The redesign only changes *default* colors, so any branch (including the
+// live default branch) that already had an explicit theme document saved in
+// Firestore keeps showing its old values — the new palette never overrides
+// a color someone genuinely picked.
+//
+// migrateLegacyThemeColors() closes that gap safely: for the default branch
+// only, any saved color field that still exactly matches one of these old
+// defaults is treated as "never actually customized, just inherited" and is
+// upgraded to the new brand default. A field holding any other value (a
+// real, deliberate choice — on the default branch or any other branch) is
+// always left untouched.
+const LEGACY_DEFAULT_THEME_COLORS = {
+  pageBackgroundColor: '#f7f3f8',
+  heroBackgroundColor: '#28102f',
+  primaryColor: '#582369',
+  buttonColor: '#542065',
+  priceBackgroundColor: '#582369',
+  priceTextColor: '#ffffff',
+  headingColor: '#35123f',
+  textColor: '#26132e',
+  mutedTextColor: '#77637d',
+  navigationBackgroundColor: '#ffffff',
+  footerBackgroundColor: '#28102f',
+  buttonTextColor: '#ffffff',
+  borderColor: '#e4dbe9',
+  menuBackgroundColor: '#f7f3f8',
+  footerTextColor: '#ffffff',
+  accentColor: '#582369',
   heroTitleColor: '#ffffff',
   heroTextEnColor: '#ffffff',
   heroTextArColor: '#ffffff',
@@ -74,6 +110,20 @@ export const defaultThemeSettings = {
   heroHoursBorderColor: '#645369',
   heroHoursTextColor: '#ffffff',
   heroDownArrowColor: '#ffffff',
+}
+
+export function migrateLegacyThemeColors(data) {
+  if (!data || typeof data !== 'object') return data
+
+  const migrated = { ...data }
+
+  for (const field of Object.keys(LEGACY_DEFAULT_THEME_COLORS)) {
+    if (migrated[field] === LEGACY_DEFAULT_THEME_COLORS[field]) {
+      migrated[field] = defaultThemeSettings[field]
+    }
+  }
+
+  return migrated
 }
 
 export const logoPositionOptions = [
