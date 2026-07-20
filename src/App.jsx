@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
 import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
@@ -45,6 +45,61 @@ import {
 // public menu visitor's initial download small.
 const Admin = lazy(() => import('./Admin.jsx'))
 
+// Product photos request an explicitly-sized copy from Google's lh3 CDN
+// instead of the original file — a small one for the grid card, a larger
+// (but still capped) one for the lightbox. Both come from the same stable
+// URL pattern, so neither triggers a fresh Drive metadata lookup/redirect,
+// and a phone-camera photo that's several MB never gets downloaded at full
+// size just to be shown at a few hundred pixels wide.
+const PRODUCT_THUMB_WIDTH = 480
+const PRODUCT_LIGHTBOX_WIDTH = 1600
+
+// URLs the browser has already fully fetched + decoded at least once this
+// session. Lets the lightbox skip its loading spinner on a repeat open, and
+// lets the visibility-based preload below skip a redundant fetch for an
+// image that's already warm.
+const loadedImageUrls = new Set()
+
+// In-flight loads, keyed by URL. Without this, a card's visibility-preload
+// and the lightbox's own load (if a tap happens before that preload
+// finishes) would each spin up their own `Image()` for the identical URL —
+// two concurrent network requests to Google Drive instead of one, since the
+// browser's HTTP cache only dedupes once the first request has *completed*.
+// Sharing the promise means every caller rides the one real fetch.
+const pendingImageLoads = new Map()
+
+function loadImage(url) {
+  if (!url || loadedImageUrls.has(url)) {
+    return Promise.resolve()
+  }
+
+  const pending = pendingImageLoads.get(url)
+  if (pending) {
+    return pending
+  }
+
+  const promise = new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      loadedImageUrls.add(url)
+      pendingImageLoads.delete(url)
+      resolve()
+    }
+    img.onerror = () => {
+      pendingImageLoads.delete(url)
+      resolve()
+    }
+    img.src = url
+  })
+
+  pendingImageLoads.set(url, promise)
+  return promise
+}
+
+function preloadImage(url) {
+  loadImage(url)
+}
+
 // /menu/:code opens that branch's independent menu; anything else (including
 // the bare "/") falls back to the original/default branch so every link
 // that worked before branches existed keeps working unchanged.
@@ -73,9 +128,31 @@ function normalizeWhatsappNumber(rawNumber) {
     .replace(/[()]/g, '')
 }
 
-function ProductImage({ src, alt, crop, onClick, failed, onError }) {
-  const resolvedSrc = convertGoogleDriveLink(src)
-  const isClickable = Boolean(resolvedSrc) && !failed
+function ProductImage({ thumbUrl, largeUrl, alt, crop, onClick, failed, onError }) {
+  const isClickable = Boolean(thumbUrl) && !failed
+  const wrapRef = useRef(null)
+
+  // Warms the browser's cache with the lightbox-resolution photo as soon as
+  // this card is about to scroll into view, so by the time anyone actually
+  // taps it the big image is usually already downloaded and decoded.
+  useEffect(() => {
+    if (!largeUrl || !wrapRef.current) {
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          preloadImage(largeUrl)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '200px' },
+    )
+
+    observer.observe(wrapRef.current)
+    return () => observer.disconnect()
+  }, [largeUrl])
 
   function handleKeyDown(event) {
     if (!isClickable) {
@@ -88,7 +165,7 @@ function ProductImage({ src, alt, crop, onClick, failed, onError }) {
     }
   }
 
-  if (!resolvedSrc || failed) {
+  if (!thumbUrl || failed) {
     return (
       <div className="productImage productImagePlaceholder" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -105,6 +182,7 @@ function ProductImage({ src, alt, crop, onClick, failed, onError }) {
 
   return (
     <div
+      ref={wrapRef}
       className={`productImage${isClickable ? ' hasImage' : ''}`}
       onClick={isClickable ? onClick : undefined}
       onKeyDown={isClickable ? handleKeyDown : undefined}
@@ -114,17 +192,25 @@ function ProductImage({ src, alt, crop, onClick, failed, onError }) {
     >
       <img
         className="productPhoto"
-        src={resolvedSrc}
+        src={thumbUrl}
         alt={alt}
         loading="lazy"
         style={imageCropToStyle(crop)}
         onError={onError}
+        onLoad={() => loadedImageUrls.add(thumbUrl)}
       />
     </div>
   )
 }
 
-function ImageLightbox({ imageUrl, alt, onClose }) {
+function ImageLightbox({ thumbUrl, largeUrl, alt, onClose }) {
+  const [displaySrc, setDisplaySrc] = useState(() =>
+    largeUrl && loadedImageUrls.has(largeUrl) ? largeUrl : thumbUrl,
+  )
+  const [isLargeReady, setIsLargeReady] = useState(
+    () => !largeUrl || loadedImageUrls.has(largeUrl),
+  )
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -143,7 +229,30 @@ function ImageLightbox({ imageUrl, alt, onClose }) {
     }
   }, [onClose])
 
-  if (!imageUrl) {
+  // The modal itself opens instantly with whatever's already on screen
+  // (the card thumbnail) — this only swaps in the sharper version once
+  // it's actually ready, which is instant too if the visibility preload
+  // above already finished loading it.
+  useEffect(() => {
+    if (!largeUrl || loadedImageUrls.has(largeUrl)) {
+      return
+    }
+
+    let cancelled = false
+
+    loadImage(largeUrl).then(() => {
+      if (!cancelled) {
+        setDisplaySrc(largeUrl)
+        setIsLargeReady(true)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [largeUrl])
+
+  if (!thumbUrl && !largeUrl) {
     return null
   }
 
@@ -161,12 +270,10 @@ function ImageLightbox({ imageUrl, alt, onClose }) {
         ×
       </button>
 
-      <img
-        className="lightboxImage"
-        src={imageUrl}
-        alt={alt}
-        onClick={(event) => event.stopPropagation()}
-      />
+      <div className="lightboxImageWrap" onClick={(event) => event.stopPropagation()}>
+        <img className="lightboxImage" src={displaySrc} alt={alt} />
+        {!isLargeReady && <div className="lightboxSpinner" aria-hidden="true" />}
+      </div>
     </div>
   )
 }
@@ -771,7 +878,8 @@ function App() {
               {section.products.map((product) => {
                 const productKey = product.id || `${section.id}-${product.nameEn}`
                 const productAlt = product.nameAr || product.nameEn
-                const directImageUrl = convertGoogleDriveLink(product.imageUrl)
+                const productThumbUrl = convertGoogleDriveLink(product.imageUrl, PRODUCT_THUMB_WIDTH)
+                const productLargeUrl = convertGoogleDriveLink(product.imageUrl, PRODUCT_LIGHTBOX_WIDTH)
                 const hasFailed = Boolean(failedImages[productKey])
 
                 const isOutOfStock = product.availability === 'out_of_stock'
@@ -783,7 +891,8 @@ function App() {
                   >
                     <div className="productImageWrap">
                       <ProductImage
-                        src={product.imageUrl}
+                        thumbUrl={productThumbUrl}
+                        largeUrl={productLargeUrl}
                         alt={productAlt}
                         crop={product.imageCrop}
                         failed={hasFailed}
@@ -795,7 +904,8 @@ function App() {
                         }
                         onClick={() =>
                           setLightboxImage({
-                            url: directImageUrl,
+                            thumbUrl: productThumbUrl,
+                            largeUrl: productLargeUrl,
                             alt: productAlt,
                           })
                         }
@@ -950,7 +1060,8 @@ function App() {
 
       {lightboxImage && (
         <ImageLightbox
-          imageUrl={lightboxImage.url}
+          thumbUrl={lightboxImage.thumbUrl}
+          largeUrl={lightboxImage.largeUrl}
           alt={lightboxImage.alt}
           onClose={closeLightbox}
         />
