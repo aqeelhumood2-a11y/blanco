@@ -312,6 +312,14 @@
   white-space: nowrap;
 }
 
+.navItem--active span {
+  color: var(--primary-color, #5a3a28);
+}
+
+.categoryNavigation--scrolled .navItem--active span {
+  color: var(--accent-color, #b68a63);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .navItem:hover {
     transform: translateY(-1px);

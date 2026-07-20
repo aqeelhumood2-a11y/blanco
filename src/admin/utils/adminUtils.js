@@ -285,38 +285,51 @@ export const defaultContactSettings = {
 }
 
 export const currencyOptions = ['BD', 'SAR', 'AED', 'KWD', 'OMR', 'USD']
-export const arabicFontOptions = [
-  'Cairo',
-  'Tajawal',
-  'Almarai',
-  'Amiri',
-  'Markazi Text',
-  'Reem Kufi',
-  'Aref Ruqaa',
-  'El Messiri',
-  'Changa',
-  'IBM Plex Sans Arabic',
-  'Noto Naskh Arabic',
-  'Harmattan',
-  'Lalezar',
-  'Mada',
+// Single catalog, tagged by which script(s) each family actually has glyph
+// coverage for — the Arabic and English selectors are both derived from it
+// by filtering, so a font that supports both scripts automatically shows up
+// in both lists at the same relative position, and a font is only ever
+// excluded from a selector when it genuinely lacks that script (e.g. Noto
+// Naskh Arabic ships Arabic glyphs only; the rest of the "English" fonts
+// below have no Arabic glyphs at all).
+const fontCatalog = [
+  { name: 'Cairo', scripts: ['ar', 'en'] },
+  { name: 'Tajawal', scripts: ['ar', 'en'] },
+  { name: 'Almarai', scripts: ['ar', 'en'] },
+  { name: 'Amiri', scripts: ['ar', 'en'] },
+  { name: 'Markazi Text', scripts: ['ar', 'en'] },
+  { name: 'Reem Kufi', scripts: ['ar', 'en'] },
+  { name: 'Aref Ruqaa', scripts: ['ar', 'en'] },
+  { name: 'El Messiri', scripts: ['ar', 'en'] },
+  { name: 'Changa', scripts: ['ar', 'en'] },
+  { name: 'IBM Plex Sans Arabic', scripts: ['ar', 'en'] },
+  { name: 'Noto Naskh Arabic', scripts: ['ar'] },
+  { name: 'Harmattan', scripts: ['ar', 'en'] },
+  { name: 'Lalezar', scripts: ['ar', 'en'] },
+  { name: 'Mada', scripts: ['ar', 'en'] },
+  { name: 'Montserrat', scripts: ['en'] },
+  { name: 'Poppins', scripts: ['en'] },
+  { name: 'Arial', scripts: ['en'] },
+  { name: 'Playfair Display', scripts: ['en'] },
+  { name: 'Cormorant Garamond', scripts: ['en'] },
+  { name: 'Cinzel', scripts: ['en'] },
+  { name: 'Lora', scripts: ['en'] },
+  { name: 'Raleway', scripts: ['en'] },
+  { name: 'Josefin Sans', scripts: ['en'] },
+  { name: 'Libre Baskerville', scripts: ['en'] },
+  { name: 'DM Serif Display', scripts: ['en'] },
+  { name: 'Inter', scripts: ['en'] },
+  { name: 'Quicksand', scripts: ['en'] },
+  { name: 'Nunito', scripts: ['en'] },
 ]
-export const englishFontOptions = [
-  'Montserrat',
-  'Poppins',
-  'Arial',
-  'Playfair Display',
-  'Cormorant Garamond',
-  'Cinzel',
-  'Lora',
-  'Raleway',
-  'Josefin Sans',
-  'Libre Baskerville',
-  'DM Serif Display',
-  'Inter',
-  'Quicksand',
-  'Nunito',
-]
+
+export const arabicFontOptions = fontCatalog
+  .filter((font) => font.scripts.includes('ar'))
+  .map((font) => font.name)
+
+export const englishFontOptions = fontCatalog
+  .filter((font) => font.scripts.includes('en'))
+  .map((font) => font.name)
 
 export const badgeOptions = [
   'جديد',
@@ -478,18 +491,12 @@ export function clampTextScale(value) {
 }
 
 // ---------- Weekly opening hours ----------
+// No longer editable from the admin panel (superseded by the customizable
+// heroHours rows below) — kept only so `normalizeWeeklyHours` can still
+// read whatever a site had already saved, to feed the schema.org
+// opening-hours SEO data in seo.js.
 
 export const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
-
-export const dayLabels = {
-  sun: { en: 'Sunday', ar: 'الأحد' },
-  mon: { en: 'Monday', ar: 'الاثنين' },
-  tue: { en: 'Tuesday', ar: 'الثلاثاء' },
-  wed: { en: 'Wednesday', ar: 'الأربعاء' },
-  thu: { en: 'Thursday', ar: 'الخميس' },
-  fri: { en: 'Friday', ar: 'الجمعة' },
-  sat: { en: 'Saturday', ar: 'السبت' },
-}
 
 export function defaultWeeklyHours() {
   const day = { closed: false, open: '08:00', close: '02:00' }
@@ -505,8 +512,7 @@ export function defaultWeeklyHours() {
 }
 
 // Returns null when no weekly schedule has ever been configured, so callers
-// can fall back to the legacy free-text `workingHours` string — this is what
-// makes the feature backward compatible with records that predate it.
+// can omit the SEO opening-hours field entirely for sites that never had one.
 export function normalizeWeeklyHours(raw) {
   if (!raw || typeof raw !== 'object') return null
 
@@ -523,28 +529,6 @@ export function normalizeWeeklyHours(raw) {
   }
 
   return result
-}
-
-export function getTodayKey(now = new Date()) {
-  return dayKeys[now.getDay()]
-}
-
-export function formatDayHours(day) {
-  if (!day || day.closed) return null
-  return `${day.open} – ${day.close}`
-}
-
-export function validateWeeklyHours(weeklyHours) {
-  for (const key of dayKeys) {
-    const day = weeklyHours?.[key]
-    if (!day || day.closed) continue
-
-    if (!day.open || !day.close) {
-      return { valid: false, message: `أدخل وقت الفتح والإغلاق ليوم ${dayLabels[key].ar}` }
-    }
-  }
-
-  return { valid: true, message: '' }
 }
 
 // ---------- Hero/header opening-hours box (public-facing, custom rows) ----------

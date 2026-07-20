@@ -43,14 +43,11 @@ import {
   clampTextScale,
   convertGoogleDriveLink,
   currencyOptions,
-  dayKeys,
-  dayLabels,
   defaultContactSettings,
   defaultHeroHours,
   defaultImageCrop,
   defaultSiteSettings,
   defaultThemeSettings,
-  defaultWeeklyHours,
   englishFontOptions,
   heroAlignOptions,
   heroCropRatioOptions,
@@ -59,10 +56,8 @@ import {
   newHeroHoursRow,
   normalizeHeroHours,
   normalizeImageCrop,
-  normalizeWeeklyHours,
   slugifyName,
   validateHeroHours,
-  validateWeeklyHours,
 } from './admin/utils/adminUtils.js'
 import {
   DEFAULT_BRANCH_ID,
@@ -198,12 +193,6 @@ function Admin() {
   const [contactHeadingAr, setContactHeadingAr] = useState(
     defaultSiteSettings.contactHeadingAr,
   )
-  const [weeklyHours, setWeeklyHours] = useState(defaultWeeklyHours())
-  const [weekdayPreset, setWeekdayPreset] = useState({ open: '08:00', close: '02:00' })
-  const [weekendPreset, setWeekendPreset] = useState({ open: '08:00', close: '02:00' })
-  // Public-facing hero/header opening-hours box: independent from the
-  // 7-day `weeklyHours` schedule above, which stays editable here but is
-  // no longer shown on the public homepage.
   const [heroHours, setHeroHours] = useState(defaultHeroHours())
 
   const [savingSettings, setSavingSettings] = useState(false)
@@ -498,7 +487,6 @@ function Admin() {
       setContactHeadingAr(
         data.contactHeadingAr ?? defaultSiteSettings.contactHeadingAr,
       )
-      setWeeklyHours(normalizeWeeklyHours(data.weeklyHours) ?? defaultWeeklyHours())
       setHeroHours(normalizeHeroHours(data.heroHours))
     } catch (settingsError) {
       console.error(settingsError)
@@ -516,15 +504,6 @@ function Admin() {
     setSavingSettings(true)
     setError('')
     setSettingsMessage('')
-
-    const hoursCheck = validateWeeklyHours(weeklyHours)
-
-    if (!hoursCheck.valid) {
-      setError(hoursCheck.message)
-      savingSettingsLock.current = false
-      setSavingSettings(false)
-      return
-    }
 
     const heroHoursCheck = validateHeroHours(heroHours)
 
@@ -550,7 +529,6 @@ function Admin() {
           showPrices,
           contactHeadingEn: contactHeadingEn.trim(),
           contactHeadingAr: contactHeadingAr.trim(),
-          weeklyHours,
           heroHours,
         },
         { merge: true },
@@ -810,33 +788,6 @@ function Admin() {
     setSectionSpacingScale(defaultThemeSettings.sectionSpacingScale)
     setButtonSize(defaultThemeSettings.buttonSize)
     setTextScale(defaultThemeSettings.textScale)
-  }
-
-  // Weekdays = Sun–Thu, Weekend = Fri–Sat, matching the Gulf work week (this
-  // site's default currency/content is Bahrain-oriented) rather than the
-  // Mon–Fri/Sat–Sun convention.
-  function applyWeekdayPreset() {
-    setWeeklyHours((prev) => {
-      const next = { ...prev }
-      for (const key of ['sun', 'mon', 'tue', 'wed', 'thu']) {
-        next[key] = { closed: false, open: weekdayPreset.open, close: weekdayPreset.close }
-      }
-      return next
-    })
-  }
-
-  function applyWeekendPreset() {
-    setWeeklyHours((prev) => {
-      const next = { ...prev }
-      for (const key of ['fri', 'sat']) {
-        next[key] = { closed: false, open: weekendPreset.open, close: weekendPreset.close }
-      }
-      return next
-    })
-  }
-
-  function updateDayHours(key, patch) {
-    setWeeklyHours((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }
 
   function updateHeroHoursRow(rowId, patch) {
@@ -1486,92 +1437,6 @@ function Admin() {
                     onChange={(event) => setContactHeadingAr(event.target.value)}
                   />
                 </label>
-              </div>
-
-              <div className="adminWeeklyHoursSection">
-                <h3>ساعات العمل الأسبوعية (سجل تفصيلي)</h3>
-                <p>
-                  حدد وقت الفتح والإغلاق لكل يوم، أو أغلق اليوم بالكامل. هذا الجدول التفصيلي يُحفظ في
-                  قاعدة البيانات لكنه لا يظهر للزوار — ما يظهر فعليًا في الموقع هو صندوق ساعات العمل
-                  أدناه.
-                </p>
-
-                <div className="adminWeeklyPresetsRow">
-                  <div className="adminWeeklyPreset">
-                    <span>أيام الأسبوع (الأحد - الخميس)</span>
-                    <input
-                      type="time"
-                      value={weekdayPreset.open}
-                      onChange={(event) =>
-                        setWeekdayPreset((prev) => ({ ...prev, open: event.target.value }))
-                      }
-                    />
-                    <input
-                      type="time"
-                      value={weekdayPreset.close}
-                      onChange={(event) =>
-                        setWeekdayPreset((prev) => ({ ...prev, close: event.target.value }))
-                      }
-                    />
-                    <button type="button" onClick={applyWeekdayPreset}>
-                      تطبيق على أيام الأسبوع
-                    </button>
-                  </div>
-
-                  <div className="adminWeeklyPreset">
-                    <span>نهاية الأسبوع (الجمعة - السبت)</span>
-                    <input
-                      type="time"
-                      value={weekendPreset.open}
-                      onChange={(event) =>
-                        setWeekendPreset((prev) => ({ ...prev, open: event.target.value }))
-                      }
-                    />
-                    <input
-                      type="time"
-                      value={weekendPreset.close}
-                      onChange={(event) =>
-                        setWeekendPreset((prev) => ({ ...prev, close: event.target.value }))
-                      }
-                    />
-                    <button type="button" onClick={applyWeekendPreset}>
-                      تطبيق على نهاية الأسبوع
-                    </button>
-                  </div>
-                </div>
-
-                <div className="adminWeeklyHoursGrid">
-                  {dayKeys.map((key) => (
-                    <div className="adminWeeklyHoursRow" key={key}>
-                      <span className="adminWeeklyDayLabel">{dayLabels[key].ar}</span>
-
-                      <label className="productVisibleLabel">
-                        <input
-                          type="checkbox"
-                          checked={!weeklyHours[key].closed}
-                          onChange={(event) =>
-                            updateDayHours(key, { closed: !event.target.checked })
-                          }
-                        />
-                        مفتوح
-                      </label>
-
-                      <input
-                        type="time"
-                        value={weeklyHours[key].open}
-                        disabled={weeklyHours[key].closed}
-                        onChange={(event) => updateDayHours(key, { open: event.target.value })}
-                      />
-
-                      <input
-                        type="time"
-                        value={weeklyHours[key].close}
-                        disabled={weeklyHours[key].closed}
-                        onChange={(event) => updateDayHours(key, { close: event.target.value })}
-                      />
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="adminHeroHoursSection">
