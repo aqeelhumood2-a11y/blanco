@@ -261,11 +261,6 @@
   .productImage.hasImage:hover .productPhoto {
     transform: scale(1.05);
   }
-
-  .contactLink:hover {
-    transform: translateY(-3px);
-    opacity: 0.92;
-  }
 }
 
 .navItem:focus-visible {
@@ -496,71 +491,6 @@
   background: #a52b2b;
 }
 
-/* ---------- Contact Section ---------- */
-
-.contactSection {
-  width: min(1200px, calc(100% - 34px));
-  margin: calc(90px * var(--section-spacing-scale, 1)) auto 0;
-  padding: 45px 24px;
-  text-align: center;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid var(--border-color, #e4dbe9);
-  box-shadow: 0 15px 40px rgba(47, 14, 59, 0.06);
-}
-
-.contactSectionTitle {
-  margin: 0 0 26px;
-  color: var(--heading-color, #35123f);
-  font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: calc(clamp(24px, 4vw, 36px) * var(--text-scale, 1));
-  font-weight: 800;
-  letter-spacing: 1.5px;
-}
-
-.contactLinks {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-.contactLink,
-.contactPhone,
-.contactWhatsapp,
-.contactMaps,
-.contactSocial {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: var(--button-padding, 12px 24px);
-  border-radius: 50px;
-  color: var(--button-text-color, #ffffff);
-  background: var(--button-color, #542065);
-  font-family: var(--english-font, 'Montserrat'), sans-serif;
-  font-size: var(--button-font-size, 14px);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease,
-    box-shadow 0.2s ease;
-  box-shadow: 0 8px 20px rgba(47, 14, 59, 0.12);
-}
-
-.contactLink:focus-visible,
-.contactPhone:focus-visible,
-.contactWhatsapp:focus-visible,
-.contactMaps:focus-visible,
-.contactSocial:focus-visible {
-  outline: 2px solid var(--primary-color, #6b317d);
-  outline-offset: 2px;
-}
-
 .footer {
   margin-top: calc(100px * var(--section-spacing-scale, 1));
   padding: 45px 20px;
@@ -706,10 +636,6 @@ a.footerContactItem:focus-visible {
   .productsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .contactSection {
-    padding: 36px 18px;
-  }
 }
 
 @media (max-width: 520px) {
@@ -794,32 +720,6 @@ a.footerContactItem:focus-visible {
 
   .productPrice strong {
     font-size: 12px;
-  }
-
-  .contactSection {
-    width: min(100% - 22px, 1200px);
-    margin-top: 60px;
-    padding: 28px 14px;
-    border-radius: 18px;
-  }
-
-  .contactSectionTitle {
-    margin-bottom: 18px;
-  }
-
-  .contactLinks {
-    gap: 10px;
-  }
-
-  .contactLink,
-  .contactPhone,
-  .contactWhatsapp,
-  .contactMaps,
-  .contactSocial {
-    flex: 1 1 45%;
-    min-width: 140px;
-    padding: 12px 14px;
-    font-size: 13px;
   }
 
   .footerContact {
