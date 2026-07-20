@@ -227,10 +227,18 @@
 }
 
 .categoryNavigation--scrolled {
-  background: var(--navigation-background, rgba(245, 241, 232, 0.85));
-  border-bottom: 1px solid rgba(59, 36, 28, 0.12);
-  box-shadow: 0 7px 25px rgba(59, 36, 28, 0.08);
+  background: var(--footer-background, #42171d);
+  border-bottom: 1px solid rgba(245, 241, 232, 0.14);
+  box-shadow: 0 10px 30px rgba(20, 8, 8, 0.35);
   backdrop-filter: blur(22px) saturate(160%);
+}
+
+.categoryNavigation--scrolled .navItem {
+  color: #f5f1e8;
+}
+
+.categoryNavigation--scrolled .navItem small {
+  color: rgba(245, 241, 232, 0.72);
 }
 
 .categoryNavigationInner {
@@ -289,13 +297,19 @@
     color: var(--primary-color, #5a3a28);
   }
 
+  .categoryNavigation--scrolled .navItem:hover span {
+    color: var(--accent-color, #b68a63);
+  }
+
   .productCard:hover {
-    transform: translateY(-10px) scale(1.01);
+    transform: translateY(-16px) scale(1.02);
     box-shadow:
-      0 2px 4px rgba(59, 36, 28, 0.06),
-      0 12px 24px rgba(59, 36, 28, 0.1),
-      0 32px 64px rgba(59, 36, 28, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      0 2px 4px rgba(59, 36, 28, 0.22),
+      0 10px 20px rgba(59, 36, 28, 0.18),
+      0 30px 60px rgba(59, 36, 28, 0.24),
+      0 64px 128px rgba(59, 36, 28, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 1px 0 0 rgba(255, 255, 255, 0.45);
   }
 
   .productImage.hasImage:hover .productPhoto {
@@ -309,7 +323,12 @@
   }
 
   .productCard:hover .productPrice {
-    transform: translateY(calc(50% - 3px));
+    transform: translateY(calc(50% - 5px));
+    box-shadow:
+      0 2px 4px rgba(59, 36, 28, 0.26),
+      0 10px 20px rgba(59, 36, 28, 0.3),
+      0 22px 44px rgba(59, 36, 28, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 }
 
@@ -417,12 +436,18 @@
   overflow: hidden;
   border: 1px solid var(--border-color, #ddd0be);
   border-radius: 30px;
-  background: linear-gradient(180deg, #ffffff 0%, #fffcf8 100%);
+  background: linear-gradient(145deg, #ffffff 0%, #fffcf8 55%, #faf3e9 100%);
+  /* Layered like real light falling on a raised object: a tight dark
+     contact shadow directly under the card, a medium lift shadow, a wide
+     soft ambient shadow, and a very wide diffuse glow — plus inset top/
+     left highlights so the top-left edge catches the light. */
   box-shadow:
-    0 1px 2px rgba(59, 36, 28, 0.04),
-    0 8px 16px rgba(59, 36, 28, 0.06),
-    0 24px 48px rgba(59, 36, 28, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 1px 2px rgba(59, 36, 28, 0.18),
+    0 6px 12px rgba(59, 36, 28, 0.14),
+    0 20px 40px rgba(59, 36, 28, 0.18),
+    0 46px 90px rgba(59, 36, 28, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 1px 0 0 rgba(255, 255, 255, 0.35);
   transition:
     transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -446,6 +471,9 @@
     var(--primary-color, #5a3a28) 45%,
     var(--heading-color, #3b241c) 100%
   );
+  /* Gives the photo a slightly recessed, set-in-a-frame feel, contrasting
+     with the raised card body below it for a clearer sense of depth. */
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
 .productImagePlaceholder svg {
@@ -472,8 +500,11 @@
 }
 
 .productDetails {
+  position: relative;
   padding: 30px 19px 22px;
   text-align: center;
+  /* A soft raised seam where the body meets the recessed image above it. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .productDetails h3 {
@@ -509,12 +540,16 @@
   gap: 5px;
   padding: 9px 18px;
   border-radius: 50px;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
   color: var(--price-text-color, #3b241c);
   background: var(--price-background, #b68a63);
+  /* Its own separate, tighter shadow so it reads as a distinct object
+     floating above the card, not just part of the card's own shadow. */
   box-shadow:
-    0 2px 6px rgba(59, 36, 28, 0.18),
-    0 10px 24px rgba(59, 36, 28, 0.22);
+    0 1px 2px rgba(59, 36, 28, 0.22),
+    0 6px 14px rgba(59, 36, 28, 0.26),
+    0 16px 32px rgba(59, 36, 28, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   white-space: nowrap;
 }
 
