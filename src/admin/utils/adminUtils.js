@@ -7,12 +7,9 @@ export const defaultSiteSettings = {
   welcomeAr: 'أهلًا بك، سعداء بوجودك.',
   descriptionEn: 'Take a look at our menu and enjoy your favorite drink.',
   descriptionAr: 'تصفح قائمتنا واستمتع بمشروبك المفضل.',
-  workingHours: '8:00 AM – 2:00 AM',
   footerText: 'BLANCO',
   currency: '',
   showPrices: true,
-  openingHoursLabelEn: 'Open Daily',
-  openingHoursLabelAr: 'مفتوح يوميًا',
   contactHeadingEn: 'Contact Us',
   contactHeadingAr: 'تواصل معنا',
 }
@@ -550,33 +547,60 @@ export function validateWeeklyHours(weeklyHours) {
   return { valid: true, message: '' }
 }
 
-// ---------- Hero/header opening-hours box (public-facing, 2 rows only) ----------
+// ---------- Hero/header opening-hours box (public-facing, custom rows) ----------
 // Separate from the 7-day `weeklyHours` schedule above, which stays in
 // Firestore and stays editable in admin, but is no longer shown on the
-// public homepage — the hero box now only ever shows these two
-// independently-labelled, independently-hideable rows.
+// public homepage — the hero box shows an admin-editable, reorderable list
+// of independently-labelled, independently-hideable rows (Weekday/Weekend
+// by default, plus any custom rows the admin adds — Holidays, Ramadan, ...).
 
 export function defaultHeroHours() {
+  return [
+    { id: 'row1', labelEn: 'Weekday', labelAr: 'أيام الأسبوع', open: '08:00', close: '02:00', visible: true },
+    { id: 'row2', labelEn: 'Weekend', labelAr: 'نهاية الأسبوع', open: '08:00', close: '02:00', visible: true },
+  ]
+}
+
+export function newHeroHoursRow() {
   return {
-    row1: { labelEn: 'Weekday', labelAr: 'أيام الأسبوع', open: '08:00', close: '02:00', visible: true },
-    row2: { labelEn: 'Weekend', labelAr: 'نهاية الأسبوع', open: '08:00', close: '02:00', visible: true },
+    id: generateOptionId(),
+    labelEn: '',
+    labelAr: '',
+    open: '08:00',
+    close: '17:00',
+    visible: true,
   }
 }
 
+// Firestore documents saved before this feature became a reorderable list
+// stored heroHours as a fixed { row1, row2 } object — convert those on read
+// so nothing is lost, while a raw array (the current shape) passes through
+// as-is, letting an admin add/remove/reorder rows freely.
 export function normalizeHeroHours(raw) {
-  const base = defaultHeroHours()
-  if (!raw || typeof raw !== 'object') return base
-
-  return {
-    row1: { ...base.row1, ...(raw.row1 || {}) },
-    row2: { ...base.row2, ...(raw.row2 || {}) },
+  if (Array.isArray(raw)) {
+    return raw.map((row, index) => ({
+      id: row?.id || `row-${index}-${generateOptionId()}`,
+      labelEn: row?.labelEn || '',
+      labelAr: row?.labelAr || '',
+      open: row?.open || '08:00',
+      close: row?.close || '17:00',
+      visible: row?.visible !== false,
+    }))
   }
+
+  if (raw && typeof raw === 'object' && (raw.row1 || raw.row2)) {
+    const base = defaultHeroHours()
+    return ['row1', 'row2']
+      .filter((key) => raw[key])
+      .map((key, index) => ({ ...base[index], ...raw[key], id: key }))
+  }
+
+  return defaultHeroHours()
 }
 
 export function validateHeroHours(heroHours) {
-  for (const rowKey of ['row1', 'row2']) {
-    const row = heroHours?.[rowKey]
-    if (!row || !row.visible) continue
+  for (const row of heroHours || []) {
+    if (!row.visible) continue
 
     if (!row.labelEn?.trim() || !row.labelAr?.trim()) {
       return { valid: false, message: 'اكتب نص الصف بالإنجليزي والعربي في ساعات العمل بالهيدر' }
@@ -588,6 +612,39 @@ export function validateHeroHours(heroHours) {
   }
 
   return { valid: true, message: '' }
+}
+
+// ---------- 12-hour time picker helpers ----------
+// Storage stays 24-hour "HH:mm" (unchanged schema, sorts/compares easily);
+// only the admin UI and the public-facing display use 12-hour AM/PM.
+
+export const timePickerMinuteOptions = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
+
+export function to12Hour(time24) {
+  const [hStr, mStr] = (time24 || '00:00').split(':')
+  let hour = parseInt(hStr, 10)
+  if (Number.isNaN(hour)) hour = 0
+
+  const period = hour >= 12 ? 'PM' : 'AM'
+  let hour12 = hour % 12
+  if (hour12 === 0) hour12 = 12
+
+  const minute = (mStr || '00').padStart(2, '0')
+
+  return { hour: hour12, minute, period }
+}
+
+export function from12Hour(hour12, minute, period) {
+  let hour = Number(hour12) % 12
+  if (period === 'PM') hour += 12
+
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+export function formatTime12Hour(time24) {
+  if (!time24) return ''
+  const { hour, minute, period } = to12Hour(time24)
+  return `${hour}:${minute} ${period}`
 }
 
 export function validateImageLink(url) {

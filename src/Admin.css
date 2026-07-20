@@ -1710,6 +1710,24 @@
   margin-bottom: 0;
 }
 
+.adminHeroHoursRowTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-basis: 100%;
+}
+
+.adminHeroHoursRowTop .productVisibleLabel {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #43204d;
+}
+
 .adminHeroHoursRow label {
   display: flex;
   flex-direction: column;
@@ -1719,18 +1737,69 @@
   color: #43204d;
 }
 
-.adminHeroHoursRow label.productVisibleLabel {
-  flex-direction: row;
-  align-items: center;
-  flex-basis: 100%;
-}
-
-.adminHeroHoursRow input[type="text"],
-.adminHeroHoursRow input[type="time"] {
+.adminHeroHoursRow input[type="text"] {
   padding: 8px 10px;
   border: 1px solid #d9cfe0;
   border-radius: 9px;
   font-family: 'Cairo', sans-serif;
+}
+
+.adminAddHeroHoursRowButton {
+  margin-top: 4px;
+  padding: 10px 16px;
+  border: 1px dashed #b9a9c2;
+  border-radius: 9px;
+  background: #fff;
+  color: #582369;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.adminAddHeroHoursRowButton:hover {
+  background: #f3edf6;
+}
+
+/* ---------- 12-hour time picker ---------- */
+
+.adminTimePicker12h {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.adminTimePicker12h select {
+  padding: 8px 6px;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  font-family: 'Cairo', sans-serif;
+}
+
+.adminTimePickerColon {
+  font-weight: 700;
+  color: #78667d;
+}
+
+.adminTimePeriodToggle {
+  display: flex;
+  border: 1px solid #d9cfe0;
+  border-radius: 9px;
+  overflow: hidden;
+  margin-inline-start: 4px;
+}
+
+.adminTimePeriodToggle button {
+  padding: 8px 10px;
+  border: 0;
+  background: #fff;
+  color: #78667d;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.adminTimePeriodToggle button.active {
+  background: #582369;
+  color: #fff;
 }
 
 /* ---------- Homepage layout controls ---------- */
@@ -1843,6 +1912,10 @@
   .adminHeroHoursRow {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .adminTimePicker12h {
+    flex-wrap: wrap;
   }
 
   .adminWeeklyPreset {

@@ -6,12 +6,27 @@ import {
   signOut,
 } from 'firebase/auth'
 import { getDoc, setDoc } from 'firebase/firestore'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 import { auth } from './firebase.js'
 import { menuSections } from './menuData.js'
 import './Admin.css'
 
 import ImageCropEditor from './admin/components/ImageCropEditor.jsx'
+import TimePicker12h from './admin/components/TimePicker12h.jsx'
 
 // Each manager (dnd-kit reordering, the QR generator, ...) only needs to
 // download once the admin actually opens that specific section — most
@@ -41,6 +56,7 @@ import {
   heroCropRatioOptions,
   logoPositionOptions,
   migrateLegacyThemeColors,
+  newHeroHoursRow,
   normalizeHeroHours,
   normalizeImageCrop,
   normalizeWeeklyHours,
@@ -57,6 +73,85 @@ import {
   siteSettingsDocRef,
   themeSettingsDocRef,
 } from './admin/utils/branchPaths.js'
+
+function SortableHeroHoursRow({ row, dragEnabled, onChange, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.id,
+    disabled: !dragEnabled,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+  }
+
+  return (
+    <div className="adminHeroHoursRow" style={style} ref={setNodeRef}>
+      <div className="adminHeroHoursRowTop">
+        <div
+          className="adminCategoryDragHandle"
+          aria-label="سحب لإعادة ترتيب الصف"
+          role="button"
+          tabIndex={dragEnabled ? 0 : -1}
+          {...(dragEnabled ? { ...attributes, ...listeners } : {})}
+        >
+          ⠿
+        </div>
+
+        <label className="productVisibleLabel">
+          <input
+            type="checkbox"
+            checked={row.visible}
+            onChange={(event) => onChange({ visible: event.target.checked })}
+          />
+          إظهار هذا الصف
+        </label>
+
+        <button type="button" className="deleteCategoryButton" onClick={onDelete}>
+          حذف
+        </button>
+      </div>
+
+      <label>
+        العنوان بالإنجليزي
+        <input
+          type="text"
+          value={row.labelEn}
+          onChange={(event) => onChange({ labelEn: event.target.value })}
+        />
+      </label>
+
+      <label>
+        العنوان بالعربي
+        <input
+          type="text"
+          value={row.labelAr}
+          dir="rtl"
+          onChange={(event) => onChange({ labelAr: event.target.value })}
+        />
+      </label>
+
+      <label>
+        وقت الفتح
+        <TimePicker12h
+          value={row.open}
+          ariaLabel="وقت الفتح"
+          onChange={(value) => onChange({ open: value })}
+        />
+      </label>
+
+      <label>
+        وقت الإغلاق
+        <TimePicker12h
+          value={row.close}
+          ariaLabel="وقت الإغلاق"
+          onChange={(value) => onChange({ close: value })}
+        />
+      </label>
+    </div>
+  )
+}
 
 function Admin() {
   const [user, setUser] = useState(null)
@@ -92,18 +187,11 @@ function Admin() {
   const [descriptionEn, setDescriptionEn] = useState('')
   const [descriptionAr, setDescriptionAr] = useState('')
 
-  const [workingHours, setWorkingHours] = useState('')
   const [footerText, setFooterText] = useState('')
 
   const [currency, setCurrency] = useState('BD')
   const [showPrices, setShowPrices] = useState(true)
 
-  const [openingHoursLabelEn, setOpeningHoursLabelEn] = useState(
-    defaultSiteSettings.openingHoursLabelEn,
-  )
-  const [openingHoursLabelAr, setOpeningHoursLabelAr] = useState(
-    defaultSiteSettings.openingHoursLabelAr,
-  )
   const [contactHeadingEn, setContactHeadingEn] = useState(
     defaultSiteSettings.contactHeadingEn,
   )
@@ -251,6 +339,8 @@ function Admin() {
   const themeRef = useRef(null)
   const contactRef = useRef(null)
 
+  const heroHoursSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
   // Synchronous locks against duplicate submissions — see ProductsManager
   // for why a ref is required here instead of the saving*/submitting state.
   const loginLock = useRef(false)
@@ -391,9 +481,6 @@ function Admin() {
       setDescriptionAr(
         data.descriptionAr ?? defaultSiteSettings.descriptionAr,
       )
-      setWorkingHours(
-        data.workingHours ?? defaultSiteSettings.workingHours,
-      )
       setFooterText(
         data.footerText ?? defaultSiteSettings.footerText,
       )
@@ -404,12 +491,6 @@ function Admin() {
         data.showPrices !== undefined
           ? data.showPrices
           : defaultSiteSettings.showPrices,
-      )
-      setOpeningHoursLabelEn(
-        data.openingHoursLabelEn ?? defaultSiteSettings.openingHoursLabelEn,
-      )
-      setOpeningHoursLabelAr(
-        data.openingHoursLabelAr ?? defaultSiteSettings.openingHoursLabelAr,
       )
       setContactHeadingEn(
         data.contactHeadingEn ?? defaultSiteSettings.contactHeadingEn,
@@ -464,12 +545,9 @@ function Admin() {
           welcomeAr: welcomeAr.trim(),
           descriptionEn: descriptionEn.trim(),
           descriptionAr: descriptionAr.trim(),
-          workingHours: workingHours.trim(),
           footerText: footerText.trim(),
           currency,
           showPrices,
-          openingHoursLabelEn: openingHoursLabelEn.trim(),
-          openingHoursLabelAr: openingHoursLabelAr.trim(),
           contactHeadingEn: contactHeadingEn.trim(),
           contactHeadingAr: contactHeadingAr.trim(),
           weeklyHours,
@@ -761,8 +839,28 @@ function Admin() {
     setWeeklyHours((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
   }
 
-  function updateHeroHoursRow(rowKey, patch) {
-    setHeroHours((prev) => ({ ...prev, [rowKey]: { ...prev[rowKey], ...patch } }))
+  function updateHeroHoursRow(rowId, patch) {
+    setHeroHours((prev) => prev.map((row) => (row.id === rowId ? { ...row, ...patch } : row)))
+  }
+
+  function addHeroHoursRow() {
+    setHeroHours((prev) => [...prev, newHeroHoursRow()])
+  }
+
+  function deleteHeroHoursRow(rowId) {
+    setHeroHours((prev) => prev.filter((row) => row.id !== rowId))
+  }
+
+  function handleHeroHoursDragEnd(event) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    setHeroHours((prev) => {
+      const oldIndex = prev.findIndex((row) => row.id === active.id)
+      const newIndex = prev.findIndex((row) => row.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return prev
+      return arrayMove(prev, oldIndex, newIndex)
+    })
   }
 
   async function loadContactSettings() {
@@ -1329,19 +1427,6 @@ function Admin() {
                 </label>
 
                 <label>
-                  ساعات العمل
-
-                  <input
-                    type="text"
-                    value={workingHours}
-                    onChange={(event) =>
-                      setWorkingHours(event.target.value)
-                    }
-                    placeholder="8:00 AM – 2:00 AM"
-                  />
-                </label>
-
-                <label>
                   نص الفوتر
 
                   <input
@@ -1380,26 +1465,6 @@ function Admin() {
                   />
 
                   إظهار الأسعار في المنيو
-                </label>
-
-                <label>
-                  نص "مفتوح" بالإنجليزي
-
-                  <input
-                    type="text"
-                    value={openingHoursLabelEn}
-                    onChange={(event) => setOpeningHoursLabelEn(event.target.value)}
-                  />
-                </label>
-
-                <label>
-                  نص "مفتوح" بالعربي
-
-                  <input
-                    type="text"
-                    value={openingHoursLabelAr}
-                    onChange={(event) => setOpeningHoursLabelAr(event.target.value)}
-                  />
                 </label>
 
                 <label>
@@ -1512,65 +1577,35 @@ function Admin() {
               <div className="adminHeroHoursSection">
                 <h3>ساعات العمل الظاهرة في الهيدر</h3>
                 <p>
-                  هذا هو ما يراه الزوار فعليًا أعلى الموقع — صفّان بحد أقصى، كل صف بعنوان ووقت خاص بك،
-                  ويمكن إخفاء أي صف لا تريد عرضه.
+                  هذا هو ما يراه الزوار فعليًا أعلى الموقع. أضف أي عدد من الصفوف (أيام الأسبوع، نهاية
+                  الأسبوع، أعياد، رمضان، مناسبات خاصة، أو أي عنوان تريده)، اسحب من ⠿ لإعادة الترتيب،
+                  ويمكن إخفاء أو حذف أي صف لا تريد عرضه.
                 </p>
 
-                {['row1', 'row2'].map((rowKey) => (
-                  <div className="adminHeroHoursRow" key={rowKey}>
-                    <label className="productVisibleLabel">
-                      <input
-                        type="checkbox"
-                        checked={heroHours[rowKey].visible}
-                        onChange={(event) =>
-                          updateHeroHoursRow(rowKey, { visible: event.target.checked })
-                        }
+                <DndContext
+                  sensors={heroHoursSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleHeroHoursDragEnd}
+                >
+                  <SortableContext
+                    items={heroHours.map((row) => row.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {heroHours.map((row) => (
+                      <SortableHeroHoursRow
+                        key={row.id}
+                        row={row}
+                        dragEnabled={heroHours.length > 1}
+                        onChange={(patch) => updateHeroHoursRow(row.id, patch)}
+                        onDelete={() => deleteHeroHoursRow(row.id)}
                       />
-                      إظهار هذا الصف
-                    </label>
+                    ))}
+                  </SortableContext>
+                </DndContext>
 
-                    <label>
-                      العنوان بالإنجليزي
-                      <input
-                        type="text"
-                        value={heroHours[rowKey].labelEn}
-                        onChange={(event) =>
-                          updateHeroHoursRow(rowKey, { labelEn: event.target.value })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      العنوان بالعربي
-                      <input
-                        type="text"
-                        value={heroHours[rowKey].labelAr}
-                        dir="rtl"
-                        onChange={(event) =>
-                          updateHeroHoursRow(rowKey, { labelAr: event.target.value })
-                        }
-                      />
-                    </label>
-
-                    <label>
-                      وقت الفتح
-                      <input
-                        type="time"
-                        value={heroHours[rowKey].open}
-                        onChange={(event) => updateHeroHoursRow(rowKey, { open: event.target.value })}
-                      />
-                    </label>
-
-                    <label>
-                      وقت الإغلاق
-                      <input
-                        type="time"
-                        value={heroHours[rowKey].close}
-                        onChange={(event) => updateHeroHoursRow(rowKey, { close: event.target.value })}
-                      />
-                    </label>
-                  </div>
-                ))}
+                <button type="button" className="adminAddHeroHoursRowButton" onClick={addHeroHoursRow}>
+                  + إضافة صف
+                </button>
               </div>
 
               {settingsMessage && (
