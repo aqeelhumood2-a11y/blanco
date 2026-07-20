@@ -84,15 +84,13 @@ const HOMEPAGE_TEXT_FIELDS = [
   'descriptionEn',
   'descriptionAr',
   'footerText',
-  'openingHoursLabelEn',
-  'openingHoursLabelAr',
   'contactHeadingEn',
   'contactHeadingAr',
   'currency',
   'showPrices',
 ]
 
-const HOURS_FIELDS = ['workingHours', 'weeklyHours']
+const HOURS_FIELDS = ['weeklyHours', 'heroHours']
 
 function pickFields(data, fields) {
   const picked = {}

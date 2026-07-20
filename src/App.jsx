@@ -20,6 +20,7 @@ import {
   defaultHeroHours,
   defaultSiteSettings,
   defaultThemeSettings,
+  formatTime12Hour,
   getActivePrice,
   imageCropToStyle,
   isProductVisibleNow,
@@ -558,8 +559,8 @@ function App() {
     lg: { padding: '15px 30px', fontSize: '16px' },
   }[buttonSize]
 
-  const heroHoursRows = siteSettings.heroHours
-    ? [siteSettings.heroHours.row1, siteSettings.heroHours.row2].filter((row) => row?.visible)
+  const heroHoursRows = Array.isArray(siteSettings.heroHours)
+    ? siteSettings.heroHours.filter((row) => row?.visible)
     : []
 
   const rootStyle = {
@@ -668,13 +669,13 @@ function App() {
 
           {heroHoursRows.length > 0 && (
             <div className="workingHours">
-              {heroHoursRows.map((row, index) => (
-                <div className="workingHoursRow" key={index}>
+              {heroHoursRows.map((row) => (
+                <div className="workingHoursRow" key={row.id}>
                   <span>
                     {row.labelEn} | {row.labelAr}
                   </span>
                   <strong>
-                    {row.open} – {row.close}
+                    {formatTime12Hour(row.open)} – {formatTime12Hour(row.close)}
                   </strong>
                 </div>
               ))}
