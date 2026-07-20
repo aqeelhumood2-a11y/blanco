@@ -496,7 +496,7 @@ function App() {
 
   const heroBackgroundUrl = convertGoogleDriveLink(themeSettings.heroBackgroundUrl)
   const heroStyle = {
-    backgroundColor: themeSettings.heroBackgroundColor || '#e8ddc8',
+    backgroundColor: themeSettings.heroBackgroundColor || '#ddd0be',
   }
   const heroBackgroundLayerStyle = {
     backgroundImage: `url(${heroBackgroundUrl})`,
@@ -733,43 +733,40 @@ if (themeLoading) {
                     className={`productCard${isOutOfStock ? ' outOfStock' : ''}`}
                     key={productKey}
                   >
-                    <ProductImage
-                      src={product.imageUrl}
-                      alt={productAlt}
-                      crop={product.imageCrop}
-                      failed={hasFailed}
-                      onError={() =>
-                        setFailedImages((previous) => ({
-                          ...previous,
-                          [productKey]: true,
-                        }))
-                      }
-                      onClick={() =>
-                        setLightboxImage({
-                          url: directImageUrl,
-                          alt: productAlt,
-                        })
-                      }
-                    />
+                    <div className="productImageWrap">
+                      <ProductImage
+                        src={product.imageUrl}
+                        alt={productAlt}
+                        crop={product.imageCrop}
+                        failed={hasFailed}
+                        onError={() =>
+                          setFailedImages((previous) => ({
+                            ...previous,
+                            [productKey]: true,
+                          }))
+                        }
+                        onClick={() =>
+                          setLightboxImage({
+                            url: directImageUrl,
+                            alt: productAlt,
+                          })
+                        }
+                      />
 
-                    {(product.badges?.length > 0 || isOutOfStock) && (
-                      <div className="productBadges">
-                        {isOutOfStock && (
-                          <span className="productBadge outOfStockBadge">
-                            نفدت الكمية
-                          </span>
-                        )}
-                        {product.badges?.map((badge) => (
-                          <span className="productBadge" key={badge}>
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="productDetails">
-                      <h3>{product.nameEn}</h3>
-                      <p>{product.nameAr}</p>
+                      {(product.badges?.length > 0 || isOutOfStock) && (
+                        <div className="productBadges">
+                          {isOutOfStock && (
+                            <span className="productBadge outOfStockBadge">
+                              نفدت الكمية
+                            </span>
+                          )}
+                          {product.badges?.map((badge) => (
+                            <span className="productBadge" key={badge}>
+                              {badge}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {siteSettings.showPrices && (
                         <div className="productPrice">
@@ -777,6 +774,11 @@ if (themeLoading) {
                           <span>{siteSettings.currency}</span>
                         </div>
                       )}
+                    </div>
+
+                    <div className="productDetails">
+                      <h3>{product.nameEn}</h3>
+                      <p>{product.nameAr}</p>
                     </div>
                   </article>
                 )

@@ -10,6 +10,6 @@ export async function generateBranchQrDataUrl(code) {
   return QRCode.toDataURL(getBranchMenuUrl(code), {
     width: 240,
     margin: 1,
-    color: { dark: '#2f1c14', light: '#ffffff' },
+    color: { dark: '#42171d', light: '#ffffff' },
   })
 }
