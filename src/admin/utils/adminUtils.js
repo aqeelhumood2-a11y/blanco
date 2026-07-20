@@ -141,6 +141,66 @@ const LEGACY_THEME_COLOR_SNAPSHOTS = [
   },
 ]
 
+// Parses '#rgb', '#rrggbb', or 'rgb(a)(...)' into {r, g, b}, or null if the
+// value isn't a recognizable color string.
+function parseColorToRgb(value) {
+  if (typeof value !== 'string') return null
+
+  const hex = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (hex) {
+    let h = hex[1]
+    if (h.length === 3) {
+      h = h
+        .split('')
+        .map((c) => c + c)
+        .join('')
+    }
+    return {
+      r: parseInt(h.slice(0, 2), 16),
+      g: parseInt(h.slice(2, 4), 16),
+      b: parseInt(h.slice(4, 6), 16),
+    }
+  }
+
+  const rgb = value.trim().match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+  if (rgb) {
+    return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) }
+  }
+
+  return null
+}
+
+// A BLANCO-family color is a warm cream/beige/brown/burgundy/bronze tone —
+// every color the brand has ever used, at any point, keeps red >= green and
+// has a visible (non-neutral) warm cast. Used as a symptom-based safety net
+// for fields known to have shown genuinely stale, off-palette values that
+// don't match any specific historical default snapshot (e.g. a saved color
+// from even earlier in the project's history than these snapshots cover).
+function isGreenOrTealLeaning(value) {
+  const rgb = parseColorToRgb(value)
+  if (!rgb) return false
+  return rgb.g > rgb.r + 12 && rgb.g >= rgb.b - 10
+}
+
+function isNeutralOrColdWhite(value) {
+  const rgb = parseColorToRgb(value)
+  if (!rgb) return false
+  const isVeryLight = rgb.r > 248 && rgb.g > 248 && rgb.b > 248
+  const isNeutral = Math.abs(rgb.r - rgb.b) < 6
+  return isVeryLight && isNeutral
+}
+
+// Fields where a genuinely off-palette value (green/teal, or a cold neutral
+// white with none of the brand's warm cream cast) is treated as stale data
+// to correct rather than a deliberate customization to preserve — scoped to
+// exactly the fields/symptoms actually reported, so a legitimate custom
+// warm tone anywhere else is never touched.
+const OFF_PALETTE_CHECKS = {
+  navigationBackgroundColor: isGreenOrTealLeaning,
+  pageBackgroundColor: isNeutralOrColdWhite,
+  menuBackgroundColor: isNeutralOrColdWhite,
+}
+
 export function migrateLegacyThemeColors(data) {
   if (!data || typeof data !== 'object') return data
 
@@ -150,8 +210,9 @@ export function migrateLegacyThemeColors(data) {
     const matchesLegacySnapshot = LEGACY_THEME_COLOR_SNAPSHOTS.some(
       (snapshot) => field in snapshot && migrated[field] === snapshot[field],
     )
+    const isOffPalette = OFF_PALETTE_CHECKS[field]?.(migrated[field]) ?? false
 
-    if (matchesLegacySnapshot) {
+    if (matchesLegacySnapshot || isOffPalette) {
       migrated[field] = defaultThemeSettings[field]
     }
   }
