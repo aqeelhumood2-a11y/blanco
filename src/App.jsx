@@ -184,6 +184,7 @@ function App() {
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
   const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
   const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
@@ -197,6 +198,23 @@ function App() {
   useEffect(() => {
     setLogoFailed(false)
   }, [themeSettings.logoUrl])
+
+  // Drives the header's transparent-over-hero → cream/blur/shadow transition
+  // as the visitor scrolls; purely presentational, no data or routing effect.
+  useEffect(() => {
+    if (isAdminPage) {
+      return
+    }
+
+    function handleScroll() {
+      setIsHeaderScrolled(window.scrollY > 24)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [isAdminPage])
 
   useEffect(() => {
     if (isAdminPage) {
@@ -649,7 +667,9 @@ if (themeLoading) {
       </section>
 
       {firebaseMenu.length > 0 && (
-        <nav className="categoryNavigation">
+        <nav
+          className={`categoryNavigation${isHeaderScrolled ? ' categoryNavigation--scrolled' : ''}`}
+        >
           <div className="categoryNavigationInner">
             {firebaseMenu.map((section) => (
               <a key={section.id} href={`#${section.id}`} className="navItem">
