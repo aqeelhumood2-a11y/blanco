@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
 import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
@@ -186,6 +186,8 @@ function App() {
   const [logoFailed, setLogoFailed] = useState(false)
   const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
   const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
+  const [activeSectionId, setActiveSectionId] = useState('')
+  const navRef = useRef(null)
   const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
@@ -216,6 +218,46 @@ function App() {
 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [isAdminPage])
+
+  // Highlights whichever category is currently under the fixed nav bar as
+  // the visitor scrolls, by watching a thin detection band positioned right
+  // below it — re-measured on resize since the nav's height (and therefore
+  // the band's position) differs between the mobile and desktop layouts.
+  useEffect(() => {
+    if (isAdminPage || firebaseMenu.length === 0) {
+      return
+    }
+
+    let observer
+
+    function setupObserver() {
+      if (observer) observer.disconnect()
+
+      const navHeight = navRef.current?.getBoundingClientRect().height || 0
+      const bandStart = navHeight + 1
+      const bandEnd = Math.max(window.innerHeight - navHeight - 2, 0)
+
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries.find((entry) => entry.isIntersecting)
+          if (visible) {
+            setActiveSectionId(visible.target.id)
+          }
+        },
+        { rootMargin: `-${bandStart}px 0px -${bandEnd}px 0px`, threshold: 0 },
+      )
+
+      document.querySelectorAll('.menuSection').forEach((section) => observer.observe(section))
+    }
+
+    setupObserver()
+    window.addEventListener('resize', setupObserver)
+
+    return () => {
+      if (observer) observer.disconnect()
+      window.removeEventListener('resize', setupObserver)
+    }
+  }, [isAdminPage, firebaseMenu])
 
   useEffect(() => {
     if (isAdminPage) {
@@ -269,11 +311,11 @@ function App() {
               typeof data.showPrices === 'boolean'
                 ? data.showPrices
                 : DEFAULT_SITE_SETTINGS.showPrices,
-            // null (not the default object) is the "never configured" signal
-            // the public site uses to fall back to the legacy workingHours
-            // free-text string instead of a per-day schedule. Still loaded
-            // and kept in Firestore for backward compatibility, but no
-            // longer rendered anywhere on the public site (see heroHours).
+            // Not editable in admin anymore (see heroHours for the box
+            // visitors actually see) — only kept alive here to feed the
+            // schema.org opening-hours SEO data for sites that already had
+            // it saved. null when never configured, so applyPublicSeo can
+            // omit the structured-data field entirely.
             weeklyHours: normalizeWeeklyHours(data.weeklyHours),
             heroHours: normalizeHeroHours(data.heroHours),
           })
@@ -690,11 +732,16 @@ function App() {
 
       {firebaseMenu.length > 0 && (
         <nav
+          ref={navRef}
           className={`categoryNavigation${isHeaderScrolled ? ' categoryNavigation--scrolled' : ''}`}
         >
           <div className="categoryNavigationInner">
             {firebaseMenu.map((section) => (
-              <a key={section.id} href={`#${section.id}`} className="navItem">
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className={`navItem${section.id === activeSectionId ? ' navItem--active' : ''}`}
+              >
                 <span>{section.titleEn}</span>
                 <small>{section.titleAr}</small>
               </a>

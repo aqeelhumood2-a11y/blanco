@@ -1565,106 +1565,6 @@
 
 /* ---------- Weekly opening hours editor ---------- */
 
-.adminWeeklyHoursSection {
-  margin-top: 24px;
-  padding: 16px;
-  border: 1px solid #e4dbe9;
-  border-radius: 14px;
-  background: #f9f6fb;
-}
-
-.adminWeeklyHoursSection h3 {
-  margin: 0 0 4px;
-}
-
-.adminWeeklyHoursSection > p {
-  margin: 0 0 16px;
-  color: #78667d;
-  font-size: 13px;
-}
-
-.adminWeeklyPresetsRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.adminWeeklyPreset {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 260px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e4dbe9;
-}
-
-.adminWeeklyPreset span {
-  flex: 1 1 100%;
-  font-weight: 700;
-  color: #43204d;
-  font-size: 13px;
-}
-
-.adminWeeklyPreset input[type="time"] {
-  padding: 8px 10px;
-  border: 1px solid #d9cfe0;
-  border-radius: 9px;
-  font-family: 'Cairo', sans-serif;
-}
-
-.adminWeeklyPreset button {
-  border: 0;
-  border-radius: 9px;
-  padding: 8px 12px;
-  font-family: 'Cairo', sans-serif;
-  font-weight: 700;
-  cursor: pointer;
-  color: #fff;
-  background: #542065;
-}
-
-.adminWeeklyHoursGrid {
-  display: grid;
-  gap: 8px;
-}
-
-.adminWeeklyHoursRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #e4dbe9;
-}
-
-.adminWeeklyDayLabel {
-  min-width: 70px;
-  font-weight: 700;
-  color: #43204d;
-}
-
-.adminWeeklyHoursRow .productVisibleLabel {
-  min-width: 90px;
-}
-
-.adminWeeklyHoursRow input[type="time"] {
-  padding: 8px 10px;
-  border: 1px solid #d9cfe0;
-  border-radius: 9px;
-  font-family: 'Cairo', sans-serif;
-}
-
-.adminWeeklyHoursRow input[type="time"]:disabled {
-  opacity: 0.5;
-}
-
 .adminSubheading {
   margin: 24px 0 4px;
   color: #43204d;
@@ -1900,15 +1800,6 @@
     width: 100%;
   }
 
-  .adminWeeklyHoursRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .adminWeeklyHoursRow input[type="time"] {
-    width: 100%;
-  }
-
   .adminHeroHoursRow {
     flex-direction: column;
     align-items: stretch;
@@ -1916,16 +1807,6 @@
 
   .adminTimePicker12h {
     flex-wrap: wrap;
-  }
-
-  .adminWeeklyPreset {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .adminWeeklyPreset input[type="time"],
-  .adminWeeklyPreset button {
-    width: 100%;
   }
 }
 
