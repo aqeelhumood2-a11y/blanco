@@ -12,7 +12,10 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  overflow-x: hidden;
+  /* clip, not hidden — hidden makes body a scroll container, which breaks
+     position: sticky in descendants because body itself never scrolls
+     (the document does). clip still prevents horizontal overflow. */
+  overflow-x: clip;
 }
 
 img {

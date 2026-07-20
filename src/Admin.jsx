@@ -165,6 +165,24 @@ function Admin() {
   const [englishFont, setEnglishFont] = useState(
     defaultThemeSettings.englishFont,
   )
+  const [headingFontEn, setHeadingFontEn] = useState(
+    defaultThemeSettings.headingFontEn,
+  )
+  const [headingFontAr, setHeadingFontAr] = useState(
+    defaultThemeSettings.headingFontAr,
+  )
+  const [bodyFontEn, setBodyFontEn] = useState(
+    defaultThemeSettings.bodyFontEn,
+  )
+  const [bodyFontAr, setBodyFontAr] = useState(
+    defaultThemeSettings.bodyFontAr,
+  )
+  const [productFontEn, setProductFontEn] = useState(
+    defaultThemeSettings.productFontEn,
+  )
+  const [productFontAr, setProductFontAr] = useState(
+    defaultThemeSettings.productFontAr,
+  )
   const [heroOverlayOpacity, setHeroOverlayOpacity] = useState(
     defaultThemeSettings.heroOverlayOpacity,
   )
@@ -200,6 +218,9 @@ function Admin() {
 
   const [logoPosition, setLogoPosition] = useState(defaultThemeSettings.logoPosition)
   const [logoSize, setLogoSize] = useState(defaultThemeSettings.logoSize)
+  const [logoBackgroundColor, setLogoBackgroundColor] = useState(
+    defaultThemeSettings.logoBackgroundColor,
+  )
   const [logoSpacingTop, setLogoSpacingTop] = useState(defaultThemeSettings.logoSpacingTop)
   const [logoSpacingSide, setLogoSpacingSide] = useState(defaultThemeSettings.logoSpacingSide)
   const [heroAlign, setHeroAlign] = useState(defaultThemeSettings.heroAlign)
@@ -525,6 +546,24 @@ function Admin() {
       setEnglishFont(
         data.englishFont ?? defaultThemeSettings.englishFont,
       )
+      setHeadingFontEn(
+        data.headingFontEn ?? defaultThemeSettings.headingFontEn,
+      )
+      setHeadingFontAr(
+        data.headingFontAr ?? defaultThemeSettings.headingFontAr,
+      )
+      setBodyFontEn(
+        data.bodyFontEn ?? defaultThemeSettings.bodyFontEn,
+      )
+      setBodyFontAr(
+        data.bodyFontAr ?? defaultThemeSettings.bodyFontAr,
+      )
+      setProductFontEn(
+        data.productFontEn ?? defaultThemeSettings.productFontEn,
+      )
+      setProductFontAr(
+        data.productFontAr ?? defaultThemeSettings.productFontAr,
+      )
       setHeroOverlayOpacity(
         data.heroOverlayOpacity !== undefined
           ? data.heroOverlayOpacity
@@ -553,6 +592,9 @@ function Admin() {
       setAccentColor(data.accentColor ?? defaultThemeSettings.accentColor)
       setLogoPosition(data.logoPosition || defaultThemeSettings.logoPosition)
       setLogoSize(clampLogoSize(data.logoSize ?? defaultThemeSettings.logoSize))
+      setLogoBackgroundColor(
+        data.logoBackgroundColor ?? defaultThemeSettings.logoBackgroundColor,
+      )
       setLogoSpacingTop(clampSpacing(data.logoSpacingTop ?? defaultThemeSettings.logoSpacingTop))
       setLogoSpacingSide(clampSpacing(data.logoSpacingSide ?? defaultThemeSettings.logoSpacingSide))
       setHeroAlign(data.heroAlign || defaultThemeSettings.heroAlign)
@@ -616,6 +658,12 @@ function Admin() {
           footerBackgroundColor,
           arabicFont,
           englishFont,
+          headingFontEn,
+          headingFontAr,
+          bodyFontEn,
+          bodyFontAr,
+          productFontEn,
+          productFontAr,
           heroOverlayOpacity: Number(heroOverlayOpacity),
           heroScale: heroCrop.scale,
           heroOffsetX: heroCrop.offsetX,
@@ -632,6 +680,7 @@ function Admin() {
           accentColor,
           logoPosition,
           logoSize: clampLogoSize(logoSize),
+          logoBackgroundColor,
           logoSpacingTop: clampSpacing(logoSpacingTop),
           logoSpacingSide: clampSpacing(logoSpacingSide),
           heroAlign,
@@ -2013,6 +2062,121 @@ function Admin() {
                 </label>
               </div>
 
+              <p className="adminSubheadingHint">
+                يمكنك تخصيص خط مختلف للعناوين والنص العادي ونص المنتجات. اترك
+                الخيار على "افتراضي" ليتبع الخط الرئيسي أعلاه.
+              </p>
+
+              <div className="adminSiteSettingsGrid">
+                <label>
+                  خط العناوين (عربي)
+
+                  <select
+                    value={headingFontAr}
+                    onChange={(event) =>
+                      setHeadingFontAr(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {arabicFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  خط العناوين (إنجليزي)
+
+                  <select
+                    value={headingFontEn}
+                    onChange={(event) =>
+                      setHeadingFontEn(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {englishFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  خط النص العادي (عربي)
+
+                  <select
+                    value={bodyFontAr}
+                    onChange={(event) =>
+                      setBodyFontAr(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {arabicFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  خط النص العادي (إنجليزي)
+
+                  <select
+                    value={bodyFontEn}
+                    onChange={(event) =>
+                      setBodyFontEn(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {englishFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  خط نص المنتجات (عربي)
+
+                  <select
+                    value={productFontAr}
+                    onChange={(event) =>
+                      setProductFontAr(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {arabicFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  خط نص المنتجات (إنجليزي)
+
+                  <select
+                    value={productFontEn}
+                    onChange={(event) =>
+                      setProductFontEn(event.target.value)
+                    }
+                  >
+                    <option value="">افتراضي (يتبع الخط الرئيسي)</option>
+                    {englishFontOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <label>
                 شفافية تغطية الهيدر: {heroOverlayOpacity}
 
@@ -2085,6 +2249,28 @@ function Admin() {
                     onChange={(event) => setLogoSize(event.target.value)}
                   />
                 </label>
+
+                <label className="productVisibleLabel">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(logoBackgroundColor)}
+                    onChange={(event) =>
+                      setLogoBackgroundColor(event.target.checked ? '#DDD0BE' : '')
+                    }
+                  />
+                  إضافة خلفية خلف الشعار (لدمجه مع الهيدر إذا كانت صورة الشعار تحتوي على خلفية غير شفافة)
+                </label>
+
+                {logoBackgroundColor && (
+                  <label>
+                    لون خلفية الشعار
+                    <input
+                      type="color"
+                      value={logoBackgroundColor}
+                      onChange={(event) => setLogoBackgroundColor(event.target.value)}
+                    />
+                  </label>
+                )}
 
                 <label>
                   المسافة العلوية للشعار: {logoSpacingTop}px
