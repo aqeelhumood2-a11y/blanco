@@ -48,6 +48,11 @@ export const defaultThemeSettings = {
   logoOffsetX: 50,
   logoOffsetY: 50,
   logoFit: 'contain',
+  // Empty = no background (logo image shows as-is). Lets an admin whose
+  // uploaded logo file has a baked-in background color match a fill color
+  // behind it to the surrounding header, so it reads as blended in rather
+  // than a pasted image — without needing to re-export the image itself.
+  logoBackgroundColor: '',
   // Additional colors
   buttonTextColor: '#FFFCF8',
   borderColor: '#DDD0BE',

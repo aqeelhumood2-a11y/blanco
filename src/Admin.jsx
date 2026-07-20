@@ -200,6 +200,9 @@ function Admin() {
 
   const [logoPosition, setLogoPosition] = useState(defaultThemeSettings.logoPosition)
   const [logoSize, setLogoSize] = useState(defaultThemeSettings.logoSize)
+  const [logoBackgroundColor, setLogoBackgroundColor] = useState(
+    defaultThemeSettings.logoBackgroundColor,
+  )
   const [logoSpacingTop, setLogoSpacingTop] = useState(defaultThemeSettings.logoSpacingTop)
   const [logoSpacingSide, setLogoSpacingSide] = useState(defaultThemeSettings.logoSpacingSide)
   const [heroAlign, setHeroAlign] = useState(defaultThemeSettings.heroAlign)
@@ -553,6 +556,9 @@ function Admin() {
       setAccentColor(data.accentColor ?? defaultThemeSettings.accentColor)
       setLogoPosition(data.logoPosition || defaultThemeSettings.logoPosition)
       setLogoSize(clampLogoSize(data.logoSize ?? defaultThemeSettings.logoSize))
+      setLogoBackgroundColor(
+        data.logoBackgroundColor ?? defaultThemeSettings.logoBackgroundColor,
+      )
       setLogoSpacingTop(clampSpacing(data.logoSpacingTop ?? defaultThemeSettings.logoSpacingTop))
       setLogoSpacingSide(clampSpacing(data.logoSpacingSide ?? defaultThemeSettings.logoSpacingSide))
       setHeroAlign(data.heroAlign || defaultThemeSettings.heroAlign)
@@ -632,6 +638,7 @@ function Admin() {
           accentColor,
           logoPosition,
           logoSize: clampLogoSize(logoSize),
+          logoBackgroundColor,
           logoSpacingTop: clampSpacing(logoSpacingTop),
           logoSpacingSide: clampSpacing(logoSpacingSide),
           heroAlign,
@@ -2085,6 +2092,28 @@ function Admin() {
                     onChange={(event) => setLogoSize(event.target.value)}
                   />
                 </label>
+
+                <label className="productVisibleLabel">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(logoBackgroundColor)}
+                    onChange={(event) =>
+                      setLogoBackgroundColor(event.target.checked ? '#DDD0BE' : '')
+                    }
+                  />
+                  إضافة خلفية خلف الشعار (لدمجه مع الهيدر إذا كانت صورة الشعار تحتوي على خلفية غير شفافة)
+                </label>
+
+                {logoBackgroundColor && (
+                  <label>
+                    لون خلفية الشعار
+                    <input
+                      type="color"
+                      value={logoBackgroundColor}
+                      onChange={(event) => setLogoBackgroundColor(event.target.value)}
+                    />
+                  </label>
+                )}
 
                 <label>
                   المسافة العلوية للشعار: {logoSpacingTop}px

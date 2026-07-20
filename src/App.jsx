@@ -510,15 +510,11 @@ function App() {
   const resolvedLogoSpacingTop = clampSpacing(themeSettings.logoSpacingTop)
   const resolvedLogoSpacingSide = clampSpacing(themeSettings.logoSpacingSide)
   const logoCropScale = clampImageScale(themeSettings.logoScale)
-  // The category nav bar is a fixed overlay pinned to the very top of the
-  // page (so it can be transparent over the hero, then opaque once
-  // scrolled) — without this clearance, a logo positioned near the default
-  // top offset ends up hidden behind it as soon as the nav turns opaque.
-  const headerClearance = firebaseMenu.length > 0 ? 64 : 0
   const logoStyle = {
-    top: `${resolvedLogoSpacingTop + headerClearance}px`,
+    top: `${resolvedLogoSpacingTop}px`,
     width: `${resolvedLogoSize}px`,
     height: `${resolvedLogoSize}px`,
+    backgroundColor: themeSettings.logoBackgroundColor || 'transparent',
     objectFit: themeSettings.logoFit === 'cover' ? 'cover' : 'contain',
     objectPosition: `${clampImageOffset(themeSettings.logoOffsetX)}% ${clampImageOffset(themeSettings.logoOffsetY)}%`,
     ...(logoPosition === 'top-right'
