@@ -17,7 +17,7 @@
      because the box never actually scrolls itself. clip still prevents
      horizontal overflow without that side effect. */
   overflow-x: clip;
-  font-family: var(--body-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--body-font-en, 'Cairo'), sans-serif;
   animation: websiteFadeIn 0.5s ease-out both;
 }
 
@@ -95,10 +95,8 @@
 
 /* Positioned independently of .heroContent — top/left/right/width/height/
    transform come from the admin's logo position + size + spacing + crop
-   settings via inline style. z-index is above the fixed category nav
-   (z-index 50) so the logo always renders in full, never clipped by the
-   nav bar once it turns opaque on scroll, without needing to move the
-   logo's actual position. */
+   settings via inline style. z-index keeps it above the other hero layers
+   (background image, overlay, content). */
 .heroLogo {
   position: absolute;
   z-index: 60;
@@ -108,7 +106,7 @@
 
 .brandName {
   margin: 0;
-  font-family: var(--heading-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--heading-font-en, 'Cairo'), sans-serif;
   font-size: calc(clamp(46px, 9vw, 88px) * var(--text-scale, 1));
   font-weight: 800;
   line-height: 0.95;
@@ -130,7 +128,7 @@
 
 .welcome h2 {
   margin: 0;
-  font-family: var(--heading-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--heading-font-en, 'Cairo'), sans-serif;
   font-size: calc(clamp(22px, 3.6vw, 34px) * var(--text-scale, 1));
   font-weight: 600;
   color: var(--hero-text-en-color, #5a3a28);
@@ -153,7 +151,7 @@
   font-size: calc(16px * var(--text-scale, 1));
   line-height: 1.8;
   opacity: 0.92;
-  font-family: var(--body-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--body-font-en, 'Cairo'), sans-serif;
   color: var(--hero-text-en-color, #5a3a28);
 }
 
@@ -234,35 +232,9 @@
 }
 
 .categoryNavigation {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background: transparent;
-  border-bottom: 1px solid transparent;
-  box-shadow: 0 7px 25px rgba(59, 36, 28, 0);
-  backdrop-filter: blur(0px) saturate(100%);
-  transition:
-    background 0.4s ease,
-    border-color 0.4s ease,
-    box-shadow 0.4s ease,
-    backdrop-filter 0.4s ease;
-}
-
-.categoryNavigation--scrolled {
   background: var(--footer-background, #42171d);
   border-bottom: 1px solid rgba(245, 241, 232, 0.14);
   box-shadow: 0 10px 30px rgba(20, 8, 8, 0.35);
-  backdrop-filter: blur(22px) saturate(160%);
-}
-
-.categoryNavigation--scrolled .navItem {
-  color: #f5f1e8;
-}
-
-.categoryNavigation--scrolled .navItem small {
-  color: rgba(245, 241, 232, 0.72);
 }
 
 .categoryNavigationInner {
@@ -288,7 +260,7 @@
   align-items: center;
   gap: 3px;
   padding: 4px 2px;
-  color: var(--heading-color, #3b241c);
+  color: #f5f1e8;
   text-decoration: none;
   border-radius: 8px;
   transition:
@@ -297,7 +269,7 @@
 }
 
 .navItem span {
-  font-family: var(--body-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--body-font-en, 'Cairo'), sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -307,16 +279,12 @@
   font-family: var(--body-font-ar, 'Cairo'), sans-serif;
   font-size: 10px;
   font-weight: 600;
-  color: var(--muted-text-color, #5a3a28);
+  color: rgba(245, 241, 232, 0.72);
   direction: rtl;
   white-space: nowrap;
 }
 
 .navItem--active span {
-  color: var(--primary-color, #5a3a28);
-}
-
-.categoryNavigation--scrolled .navItem--active span {
   color: var(--accent-color, #b68a63);
 }
 
@@ -326,10 +294,6 @@
   }
 
   .navItem:hover span {
-    color: var(--primary-color, #5a3a28);
-  }
-
-  .categoryNavigation--scrolled .navItem:hover span {
     color: var(--accent-color, #b68a63);
   }
 
@@ -410,13 +374,12 @@
 
 .menuSection {
   padding: calc(100px * var(--section-spacing-scale, 1)) 0 20px;
-  scroll-margin-top: 75px;
 }
 
 .menuSectionHeader {
   position: -webkit-sticky;
   position: sticky;
-  top: 67px;
+  top: 0;
   z-index: 45;
   background: var(--page-background, #f5f1e8);
   margin-bottom: 40px;
@@ -445,7 +408,7 @@
 .menuSectionHeader h2 {
   margin: 0;
   color: var(--heading-color, #3b241c);
-  font-family: var(--heading-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--heading-font-en, 'Cairo'), sans-serif;
   font-size: calc(clamp(31px, 5vw, 50px) * var(--text-scale, 1));
   font-weight: 800;
   letter-spacing: 1.5px;
@@ -551,7 +514,7 @@
 .productDetails h3 {
   margin: 0;
   color: var(--heading-color, #3b241c);
-  font-family: var(--product-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--product-font-en, 'Cairo'), sans-serif;
   font-size: calc(16px * var(--text-scale, 1));
   font-weight: 700;
   line-height: 1.35;
@@ -628,7 +591,7 @@
   border-radius: 999px;
   background: var(--accent-color, #b68a63);
   color: #3b241c;
-  font-family: var(--product-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--product-font-en, 'Cairo'), sans-serif;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
@@ -672,7 +635,7 @@
   border: 1px solid rgba(245, 241, 232, 0.22);
   border-radius: 999px;
   background: rgba(245, 241, 232, 0.08);
-  font-family: var(--body-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--body-font-en, 'Cairo'), sans-serif;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.2px;
@@ -849,7 +812,7 @@ a.footerContactItem:focus-visible {
   }
 
   .menuSectionHeader {
-    top: 58px;
+    top: 0;
     margin-bottom: 25px;
   }
 
@@ -980,7 +943,7 @@ a.footerContactItem:focus-visible {
 }
 
 .appLoadingWordmark {
-  font-family: var(--heading-font-en, 'Montserrat'), sans-serif;
+  font-family: var(--heading-font-en, 'Cairo'), sans-serif;
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 3px;

@@ -31,7 +31,7 @@ export const defaultThemeSettings = {
   navigationBackgroundColor: 'rgba(245, 241, 232, 0.82)',
   footerBackgroundColor: '#42171D',
   arabicFont: 'Cairo',
-  englishFont: 'Montserrat',
+  englishFont: 'Cairo',
   // Empty = inherit englishFont/arabicFont above, so adding these controls
   // never changes what's already showing until a role is explicitly
   // overridden with its own font.
@@ -285,42 +285,24 @@ export const defaultContactSettings = {
 }
 
 export const currencyOptions = ['BD', 'SAR', 'AED', 'KWD', 'OMR', 'USD']
-// Single catalog, tagged by which script(s) each family actually has glyph
-// coverage for — the Arabic and English selectors are both derived from it
-// by filtering, so a font that supports both scripts automatically shows up
-// in both lists at the same relative position, and a font is only ever
-// excluded from a selector when it genuinely lacks that script (e.g. Noto
-// Naskh Arabic ships Arabic glyphs only; the rest of the "English" fonts
-// below have no Arabic glyphs at all).
+// Ten curated premium fonts, tagged by which script(s) each family actually
+// has glyph coverage for. The Arabic and English selectors both derive from
+// this one catalog by filtering, so any font supporting both scripts shows
+// up in both lists at the same relative position — every font here does, so
+// in practice both selectors currently show the exact same list. A font
+// would only be excluded from one selector if it genuinely lacked that
+// script's glyphs.
 const fontCatalog = [
   { name: 'Cairo', scripts: ['ar', 'en'] },
   { name: 'Tajawal', scripts: ['ar', 'en'] },
   { name: 'Almarai', scripts: ['ar', 'en'] },
-  { name: 'Amiri', scripts: ['ar', 'en'] },
-  { name: 'Markazi Text', scripts: ['ar', 'en'] },
-  { name: 'Reem Kufi', scripts: ['ar', 'en'] },
-  { name: 'Aref Ruqaa', scripts: ['ar', 'en'] },
   { name: 'El Messiri', scripts: ['ar', 'en'] },
+  { name: 'Markazi Text', scripts: ['ar', 'en'] },
   { name: 'Changa', scripts: ['ar', 'en'] },
   { name: 'IBM Plex Sans Arabic', scripts: ['ar', 'en'] },
-  { name: 'Noto Naskh Arabic', scripts: ['ar'] },
-  { name: 'Harmattan', scripts: ['ar', 'en'] },
+  { name: 'Reem Kufi', scripts: ['ar', 'en'] },
   { name: 'Lalezar', scripts: ['ar', 'en'] },
   { name: 'Mada', scripts: ['ar', 'en'] },
-  { name: 'Montserrat', scripts: ['en'] },
-  { name: 'Poppins', scripts: ['en'] },
-  { name: 'Arial', scripts: ['en'] },
-  { name: 'Playfair Display', scripts: ['en'] },
-  { name: 'Cormorant Garamond', scripts: ['en'] },
-  { name: 'Cinzel', scripts: ['en'] },
-  { name: 'Lora', scripts: ['en'] },
-  { name: 'Raleway', scripts: ['en'] },
-  { name: 'Josefin Sans', scripts: ['en'] },
-  { name: 'Libre Baskerville', scripts: ['en'] },
-  { name: 'DM Serif Display', scripts: ['en'] },
-  { name: 'Inter', scripts: ['en'] },
-  { name: 'Quicksand', scripts: ['en'] },
-  { name: 'Nunito', scripts: ['en'] },
 ]
 
 export const arabicFontOptions = fontCatalog
