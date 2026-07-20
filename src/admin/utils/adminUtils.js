@@ -361,17 +361,29 @@ export function pickNextCategoryColor(existingCategories) {
 
 // ---------- Google Drive image handling ----------
 
-export function convertGoogleDriveLink(url) {
+// `width`, when given, asks Google's lh3 CDN to serve a resized copy
+// (`=w{n}`) instead of the original file — a thumbnail-sized request for
+// product cards downloads a fraction of the bytes of the full photo, and a
+// capped-but-generous request for the lightbox avoids ever transferring an
+// unnecessarily huge original (phone camera photos are often several MB)
+// without a visible quality loss on a screen.
+export function convertGoogleDriveLink(url, width) {
   if (!url) return ''
 
   const trimmed = url.trim()
 
   if (!trimmed) return ''
 
-  // Already converted — return as-is so re-processing an already-converted
-  // link never corrupts it (idempotent).
+  function withWidth(base) {
+    return width ? `${base}=w${width}` : base
+  }
+
+  // Already converted — strip any previous size suffix and reapply
+  // whatever this call site wants, so re-processing an already-converted
+  // link (possibly requested at a different size) never corrupts it or
+  // gets stuck on the first size it was ever converted at (idempotent).
   if (trimmed.includes('lh3.googleusercontent.com')) {
-    return trimmed
+    return withWidth(trimmed.split('=')[0])
   }
 
   if (!trimmed.includes('drive.google.com')) {
@@ -399,7 +411,7 @@ export function convertGoogleDriveLink(url) {
   }
 
   if (fileId) {
-    return `https://lh3.googleusercontent.com/d/${fileId}`
+    return withWidth(`https://lh3.googleusercontent.com/d/${fileId}`)
   }
 
   return trimmed
