@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react'
 import { getDocs, getDoc } from 'firebase/firestore'
 import './App.css'
 
@@ -185,9 +185,7 @@ function App() {
   const [failedImages, setFailedImages] = useState({})
   const [logoFailed, setLogoFailed] = useState(false)
   const [branchState, setBranchState] = useState({ status: 'loading', branch: null })
-  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false)
   const [activeSectionId, setActiveSectionId] = useState('')
-  const navRef = useRef(null)
   const pwaUpdate = usePwaUpdate()
 
   const isAdminPage = window.location.pathname === '/admin'
@@ -202,27 +200,10 @@ function App() {
     setLogoFailed(false)
   }, [themeSettings.logoUrl])
 
-  // Drives the header's transparent-over-hero → cream/blur/shadow transition
-  // as the visitor scrolls; purely presentational, no data or routing effect.
-  useEffect(() => {
-    if (isAdminPage) {
-      return
-    }
-
-    function handleScroll() {
-      setIsHeaderScrolled(window.scrollY > 24)
-    }
-
-    handleScroll()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [isAdminPage])
-
-  // Highlights whichever category is currently under the fixed nav bar as
-  // the visitor scrolls, by watching a thin detection band positioned right
-  // below it — re-measured on resize since the nav's height (and therefore
-  // the band's position) differs between the mobile and desktop layouts.
+  // Highlights whichever category the visitor has scrolled to, via a thin
+  // detection band pinned to the very top of the viewport — the section
+  // whose sticky title is currently pinned there is the "active" one.
+  // Re-measured on resize since the viewport height changes the band.
   useEffect(() => {
     if (isAdminPage || firebaseMenu.length === 0) {
       return
@@ -233,9 +214,7 @@ function App() {
     function setupObserver() {
       if (observer) observer.disconnect()
 
-      const navHeight = navRef.current?.getBoundingClientRect().height || 0
-      const bandStart = navHeight + 1
-      const bandEnd = Math.max(window.innerHeight - navHeight - 2, 0)
+      const bandEnd = Math.max(window.innerHeight - 2, 0)
 
       observer = new IntersectionObserver(
         (entries) => {
@@ -244,7 +223,7 @@ function App() {
             setActiveSectionId(visible.target.id)
           }
         },
-        { rootMargin: `-${bandStart}px 0px -${bandEnd}px 0px`, threshold: 0 },
+        { rootMargin: `0px 0px -${bandEnd}px 0px`, threshold: 0 },
       )
 
       document.querySelectorAll('.menuSection').forEach((section) => observer.observe(section))
@@ -731,10 +710,7 @@ function App() {
       </section>
 
       {firebaseMenu.length > 0 && (
-        <nav
-          ref={navRef}
-          className={`categoryNavigation${isHeaderScrolled ? ' categoryNavigation--scrolled' : ''}`}
-        >
+        <nav className="categoryNavigation">
           <div className="categoryNavigationInner">
             {firebaseMenu.map((section) => (
               <a
