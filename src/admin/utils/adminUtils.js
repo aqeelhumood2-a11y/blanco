@@ -35,6 +35,15 @@ export const defaultThemeSettings = {
   footerBackgroundColor: '#42171D',
   arabicFont: 'Cairo',
   englishFont: 'Montserrat',
+  // Empty = inherit englishFont/arabicFont above, so adding these controls
+  // never changes what's already showing until a role is explicitly
+  // overridden with its own font.
+  headingFontEn: '',
+  headingFontAr: '',
+  bodyFontEn: '',
+  bodyFontAr: '',
+  productFontEn: '',
+  productFontAr: '',
   heroOverlayOpacity: 0.68,
   // Image placement controls: scale is a zoom multiplier (1 = fit, no crop
   // beyond the default fit mode); offsets are CSS position percentages
@@ -279,8 +288,38 @@ export const defaultContactSettings = {
 }
 
 export const currencyOptions = ['BD', 'SAR', 'AED', 'KWD', 'OMR', 'USD']
-export const arabicFontOptions = ['Cairo', 'Tajawal', 'Almarai']
-export const englishFontOptions = ['Montserrat', 'Poppins', 'Arial']
+export const arabicFontOptions = [
+  'Cairo',
+  'Tajawal',
+  'Almarai',
+  'Amiri',
+  'Markazi Text',
+  'Reem Kufi',
+  'Aref Ruqaa',
+  'El Messiri',
+  'Changa',
+  'IBM Plex Sans Arabic',
+  'Noto Naskh Arabic',
+  'Harmattan',
+  'Lalezar',
+  'Mada',
+]
+export const englishFontOptions = [
+  'Montserrat',
+  'Poppins',
+  'Arial',
+  'Playfair Display',
+  'Cormorant Garamond',
+  'Cinzel',
+  'Lora',
+  'Raleway',
+  'Josefin Sans',
+  'Libre Baskerville',
+  'DM Serif Display',
+  'Inter',
+  'Quicksand',
+  'Nunito',
+]
 
 export const badgeOptions = [
   'جديد',

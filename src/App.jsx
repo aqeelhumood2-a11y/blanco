@@ -580,6 +580,12 @@ function App() {
     '--accent-color': themeSettings.accentColor,
     '--english-font': themeSettings.englishFont,
     '--arabic-font': themeSettings.arabicFont,
+    '--heading-font-en': themeSettings.headingFontEn || themeSettings.englishFont,
+    '--heading-font-ar': themeSettings.headingFontAr || themeSettings.arabicFont,
+    '--body-font-en': themeSettings.bodyFontEn || themeSettings.englishFont,
+    '--body-font-ar': themeSettings.bodyFontAr || themeSettings.arabicFont,
+    '--product-font-en': themeSettings.productFontEn || themeSettings.englishFont,
+    '--product-font-ar': themeSettings.productFontAr || themeSettings.arabicFont,
     '--hero-overlay-opacity': themeSettings.heroOverlayOpacity,
     '--hero-background': themeSettings.heroBackgroundColor,
     '--hero-title-color': themeSettings.heroTitleColor,
@@ -597,14 +603,28 @@ function App() {
     '--button-font-size': buttonSizing.fontSize,
     backgroundColor: themeSettings.pageBackgroundColor,
   }
-if (themeLoading) {
-  return (
-    <main className="branchNotice">
-      <div className="pageLoadingSpinner" aria-hidden="true" />
-      <p>Loading menu... | جاري تحميل القائمة...</p>
-    </main>
-  )
-}
+  if (themeLoading || menuLoading) {
+    return (
+      <main className="appLoadingScreen">
+        <div className="appLoadingBrand">
+          {showLogo ? (
+            <img
+              src={logoUrl}
+              alt={siteSettings.siteNameEn}
+              className="appLoadingLogo"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            <span className="appLoadingWordmark">
+              {siteSettings.siteNameEn || 'BLANCO'}
+            </span>
+          )}
+        </div>
+        <div className="appLoadingSpinner" aria-hidden="true" />
+      </main>
+    )
+  }
+
   return (
     <main className="website" style={rootStyle}>
       <section
