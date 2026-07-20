@@ -21,25 +21,28 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,jpeg,jpg,svg,ico,webmanifest}'],
       },
       includeAssets: ['favicon.jpeg', 'apple-touch-icon.png', 'icons.svg', 'robots.txt'],
-      manifest: {
-        id: '/',
-        name: 'BLANCO — Digital Menu',
-        short_name: 'BLANCO',
-        description: 'Browse the digital menu for BLANCO — drinks, food and more.',
-        start_url: '/',
-        scope: '/',
-        display: 'standalone',
-        background_color: '#f5f1e8',
-        theme_color: '#42171d',
-        orientation: 'portrait',
-        lang: 'en',
-        categories: ['food', 'shopping'],
-        icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
+      // No `manifest` option here on purpose. Menu and Admin are two
+      // separate installable apps with their own manifest each
+      // (public/manifest.webmanifest, public/admin-manifest.webmanifest),
+      // both hand-written and linked explicitly from index.html/admin.html.
+      // Letting this plugin generate+inject a manifest would inject the
+      // *same* one into every HTML entry below, including admin.html —
+      // exactly the bug this file exists to avoid.
+      manifest: false,
     }),
   ],
+  build: {
+    rollupOptions: {
+      // Two real, independent HTML entry points sharing the same React
+      // bundle — App.jsx branches on window.location.pathname at runtime,
+      // but the installable identity (manifest link, icon, title,
+      // theme-color) each page presents has to be static markup, not
+      // something JS rewrites after the fact, for iOS's Add to Home Screen
+      // to pick it up reliably.
+      input: {
+        main: 'index.html',
+        admin: 'admin.html',
+      },
+    },
+  },
 })

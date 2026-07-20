@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BLANCO — لوحة الإدارة</title>
+
+    <!-- Admin is never meant to be indexed or shared — src/seo.js sets
+         noindex/nofollow at runtime once the app mounts. -->
+    <meta name="description" content="Manage the BLANCO digital menu." />
+    <meta name="theme-color" content="#2c1035" />
+
+    <link rel="icon" type="image/jpeg" href="/favicon.jpeg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/admin-icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/admin-icon-512.png" />
+    <link rel="apple-touch-icon" href="/admin-apple-touch-icon.png" />
+
+    <!-- Admin's own installable identity — a real, separate HTML entry
+         (this file) served only at /admin, with its own manifest, icon,
+         and title hardcoded directly rather than patched in by JS after
+         load. This is what makes "Add to Home Screen" on /admin install a
+         genuinely distinct app instead of a re-skinned copy of the Menu. -->
+    <link rel="manifest" href="/admin-manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="BLANCO Admin" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Same font catalog as the Menu — the admin panel's font pickers
+         preview these families directly in their <select> options. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Almarai:wght@400;700;800&family=El+Messiri:wght@400;500;600;700&family=Markazi+Text:wght@400;500;600;700&family=Changa:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@400;500;600;700&family=Lalezar&family=Mada:wght@400;500;600;700&display=swap"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
