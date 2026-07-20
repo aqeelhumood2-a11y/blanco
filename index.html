@@ -12,7 +12,7 @@
       name="description"
       content="Browse the digital menu for BLANCO — drinks, food and more."
     />
-    <meta name="theme-color" content="#42171d" />
+    <meta id="themeColorMeta" name="theme-color" content="#42171d" />
     <meta property="og:type" content="restaurant.restaurant" />
     <meta property="og:title" content="BLANCO — Menu | القائمة" />
     <meta
@@ -31,7 +31,17 @@
     <link rel="icon" type="image/jpeg" href="/favicon.jpeg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link id="appleTouchIcon" rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- iOS "Add to Home Screen" relies on these classic meta tags for
+         standalone display more consistently than on the Web App Manifest
+         alone. The script at the end of <body> overrides the title/icon
+         (and swaps the manifest link) for /admin, so Menu and Admin install
+         as two distinct home-screen apps instead of one overwriting the
+         other. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta id="appleWebAppTitle" name="apple-mobile-web-app-title" content="BLANCO" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,6 +57,36 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Runs before the React bundle, as early as possible, so the page's
+         installable identity (manifest, icon, name, theme color) is already
+         correct for /admin the moment anyone taps Share → Add to Home
+         Screen. Menu and Admin share one index.html (Vercel rewrites both
+         "/" and "/admin" to it), so this is the only way to give each route
+         its own icon/name/start_url without a second HTML file. -->
+    <script>
+      (function () {
+        if (window.location.pathname !== '/admin') return
+
+        document.title = 'BLANCO — لوحة الإدارة'
+
+        document.querySelectorAll('link[rel="manifest"]').forEach(function (link) {
+          link.remove()
+        })
+        var manifestLink = document.createElement('link')
+        manifestLink.rel = 'manifest'
+        manifestLink.href = '/admin-manifest.webmanifest'
+        document.head.appendChild(manifestLink)
+
+        var appleIcon = document.getElementById('appleTouchIcon')
+        if (appleIcon) appleIcon.href = '/admin-apple-touch-icon.png'
+
+        var appleTitle = document.getElementById('appleWebAppTitle')
+        if (appleTitle) appleTitle.setAttribute('content', 'BLANCO Admin')
+
+        var themeColor = document.getElementById('themeColorMeta')
+        if (themeColor) themeColor.setAttribute('content', '#2c1035')
+      })()
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

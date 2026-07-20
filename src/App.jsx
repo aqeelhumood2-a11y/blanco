@@ -490,9 +490,12 @@ function App() {
 
   if (isAdminPage) {
     return (
-      <Suspense fallback={<main className="adminLoading" dir="rtl">جاري التحميل...</main>}>
-        <Admin />
-      </Suspense>
+      <>
+        <Suspense fallback={<main className="adminLoading" dir="rtl">جاري التحميل...</main>}>
+          <Admin />
+        </Suspense>
+        <InstallPrompt />
+      </>
     )
   }
 
