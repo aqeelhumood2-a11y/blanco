@@ -190,15 +190,31 @@ function isNeutralOrColdWhite(value) {
   return isVeryLight && isNeutral
 }
 
-// Fields where a genuinely off-palette value (green/teal, or a cold neutral
-// white with none of the brand's warm cream cast) is treated as stale data
-// to correct rather than a deliberate customization to preserve — scoped to
-// exactly the fields/symptoms actually reported, so a legitimate custom
-// warm tone anywhere else is never touched.
+function isOffPaletteLightSurface(value) {
+  return isGreenOrTealLeaning(value) || isNeutralOrColdWhite(value)
+}
+
+// footerTextColor is meant to be light cream sitting on the dark burgundy
+// footer — if it's too dark, it's unreadable. Confirmed live symptom: text
+// nearly invisible against the burgundy background.
+function isTooDarkToReadOnDarkBackground(value) {
+  const rgb = parseColorToRgb(value)
+  if (!rgb) return false
+  return (rgb.r + rgb.g + rgb.b) / 3 < 150
+}
+
+// Fields where a genuinely off-palette value (green/teal leaning, a cold
+// neutral white with none of the brand's warm cream cast, or — for footer
+// text specifically — too dark to read on a dark background) is treated as
+// stale data to correct rather than a deliberate customization to preserve.
+// Scoped to exactly the fields with a confirmed live symptom, so a
+// legitimate custom color anywhere else is never touched.
 const OFF_PALETTE_CHECKS = {
   navigationBackgroundColor: isGreenOrTealLeaning,
-  pageBackgroundColor: isNeutralOrColdWhite,
-  menuBackgroundColor: isNeutralOrColdWhite,
+  pageBackgroundColor: isOffPaletteLightSurface,
+  menuBackgroundColor: isOffPaletteLightSurface,
+  heroBackgroundColor: isOffPaletteLightSurface,
+  footerTextColor: isTooDarkToReadOnDarkBackground,
 }
 
 export function migrateLegacyThemeColors(data) {

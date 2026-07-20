@@ -79,7 +79,7 @@
   position: absolute;
   z-index: 3;
   display: block;
-  filter: drop-shadow(0 6px 16px rgba(59, 36, 28, 0.25));
+  background: transparent;
 }
 
 .brandName {
