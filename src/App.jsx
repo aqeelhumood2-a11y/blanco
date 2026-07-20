@@ -473,7 +473,7 @@ function App() {
 
   const heroBackgroundUrl = convertGoogleDriveLink(themeSettings.heroBackgroundUrl)
   const heroStyle = {
-    backgroundColor: themeSettings.heroBackgroundColor || '#28102f',
+    backgroundColor: themeSettings.heroBackgroundColor || '#e8ddc8',
   }
   const heroBackgroundLayerStyle = {
     backgroundImage: `url(${heroBackgroundUrl})`,

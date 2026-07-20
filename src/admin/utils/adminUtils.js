@@ -17,20 +17,22 @@ export const defaultSiteSettings = {
   contactHeadingAr: 'تواصل معنا',
 }
 
+// BLANCO brand palette — warm coffee tones. See defaultThemeSettings below
+// for how each brand color maps to a specific UI role.
 export const defaultThemeSettings = {
   heroBackgroundUrl: '',
   logoUrl: '',
-  pageBackgroundColor: '#f7f3f8',
-  heroBackgroundColor: '#28102f',
-  primaryColor: '#582369',
-  buttonColor: '#542065',
-  priceBackgroundColor: '#582369',
-  priceTextColor: '#ffffff',
-  headingColor: '#35123f',
-  textColor: '#26132e',
-  mutedTextColor: '#77637d',
-  navigationBackgroundColor: '#ffffff',
-  footerBackgroundColor: '#28102f',
+  pageBackgroundColor: '#F5F1E6',
+  heroBackgroundColor: '#E8DDC8',
+  primaryColor: '#5A3A28',
+  buttonColor: '#5A3A28',
+  priceBackgroundColor: '#B8905B',
+  priceTextColor: '#3D281C',
+  headingColor: '#3D281C',
+  textColor: '#3B2A20',
+  mutedTextColor: '#6A5749',
+  navigationBackgroundColor: 'rgba(245, 241, 230, 0.82)',
+  footerBackgroundColor: '#2F1C14',
   arabicFont: 'Cairo',
   englishFont: 'Montserrat',
   heroOverlayOpacity: 0.68,
@@ -47,11 +49,11 @@ export const defaultThemeSettings = {
   logoOffsetY: 50,
   logoFit: 'contain',
   // Additional colors
-  buttonTextColor: '#ffffff',
-  borderColor: '#e4dbe9',
-  menuBackgroundColor: '#f7f3f8',
-  footerTextColor: '#ffffff',
-  accentColor: '#582369',
+  buttonTextColor: '#FFFCF8',
+  borderColor: '#DDD0BE',
+  menuBackgroundColor: '#F5F1E6',
+  footerTextColor: '#F5F1E6',
+  accentColor: '#B8905B',
   // Layout controls
   logoPosition: 'top-left',
   logoSize: 90,
@@ -62,18 +64,14 @@ export const defaultThemeSettings = {
   sectionSpacingScale: 1,
   buttonSize: 'md',
   textScale: 1,
-  // Hero/header text + opening-hours-box colors. Defaults are chosen to
-  // exactly match (title/text/arrow) or closely approximate (the box's
-  // previously-translucent background/border, since a native color input
-  // can't represent transparency) the look these elements already had
-  // before they became independently editable.
-  heroTitleColor: '#ffffff',
-  heroTextEnColor: '#ffffff',
-  heroTextArColor: '#ffffff',
-  heroHoursBgColor: '#3e2844',
-  heroHoursBorderColor: '#645369',
-  heroHoursTextColor: '#ffffff',
-  heroDownArrowColor: '#ffffff',
+  // Hero/header text + opening-hours-box colors.
+  heroTitleColor: '#3D281C',
+  heroTextEnColor: '#5A3A28',
+  heroTextArColor: '#5A3A28',
+  heroHoursBgColor: '#FFFCF8',
+  heroHoursBorderColor: '#DDD0BE',
+  heroHoursTextColor: '#3D281C',
+  heroDownArrowColor: '#5A3A28',
 }
 
 export const logoPositionOptions = [
