@@ -23,6 +23,7 @@ import {
   getActivePrice,
   imageCropToStyle,
   isProductVisibleNow,
+  migrateLegacyThemeColors,
   normalizeHeroHours,
   normalizeWeeklyHours,
 } from './admin/utils/adminUtils.js'
@@ -269,7 +270,11 @@ function App() {
         const themeSnapshot = await getDoc(themeSettingsDocRef(branchId))
 
         if (!cancelled && themeSnapshot.exists()) {
-          const data = themeSnapshot.data()
+          const rawData = themeSnapshot.data()
+          const data =
+            branchId === DEFAULT_BRANCH_ID
+              ? migrateLegacyThemeColors(rawData)
+              : rawData
 
           setThemeSettings({
             ...DEFAULT_THEME_SETTINGS,

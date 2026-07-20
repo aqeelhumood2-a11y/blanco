@@ -74,6 +74,58 @@ export const defaultThemeSettings = {
   heroDownArrowColor: '#5A3A28',
 }
 
+// Exact color values shipped as defaults before the BLANCO brand redesign.
+// The redesign only changes *default* colors, so any branch (including the
+// live default branch) that already had an explicit theme document saved in
+// Firestore keeps showing its old values — the new palette never overrides
+// a color someone genuinely picked.
+//
+// migrateLegacyThemeColors() closes that gap safely: for the default branch
+// only, any saved color field that still exactly matches one of these old
+// defaults is treated as "never actually customized, just inherited" and is
+// upgraded to the new brand default. A field holding any other value (a
+// real, deliberate choice — on the default branch or any other branch) is
+// always left untouched.
+const LEGACY_DEFAULT_THEME_COLORS = {
+  pageBackgroundColor: '#f7f3f8',
+  heroBackgroundColor: '#28102f',
+  primaryColor: '#582369',
+  buttonColor: '#542065',
+  priceBackgroundColor: '#582369',
+  priceTextColor: '#ffffff',
+  headingColor: '#35123f',
+  textColor: '#26132e',
+  mutedTextColor: '#77637d',
+  navigationBackgroundColor: '#ffffff',
+  footerBackgroundColor: '#28102f',
+  buttonTextColor: '#ffffff',
+  borderColor: '#e4dbe9',
+  menuBackgroundColor: '#f7f3f8',
+  footerTextColor: '#ffffff',
+  accentColor: '#582369',
+  heroTitleColor: '#ffffff',
+  heroTextEnColor: '#ffffff',
+  heroTextArColor: '#ffffff',
+  heroHoursBgColor: '#3e2844',
+  heroHoursBorderColor: '#645369',
+  heroHoursTextColor: '#ffffff',
+  heroDownArrowColor: '#ffffff',
+}
+
+export function migrateLegacyThemeColors(data) {
+  if (!data || typeof data !== 'object') return data
+
+  const migrated = { ...data }
+
+  for (const field of Object.keys(LEGACY_DEFAULT_THEME_COLORS)) {
+    if (migrated[field] === LEGACY_DEFAULT_THEME_COLORS[field]) {
+      migrated[field] = defaultThemeSettings[field]
+    }
+  }
+
+  return migrated
+}
+
 export const logoPositionOptions = [
   { value: 'top-left', label: 'أعلى اليسار' },
   { value: 'top-center', label: 'أعلى الوسط' },

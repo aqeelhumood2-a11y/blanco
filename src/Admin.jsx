@@ -40,6 +40,7 @@ import {
   heroAlignOptions,
   heroCropRatioOptions,
   logoPositionOptions,
+  migrateLegacyThemeColors,
   normalizeHeroHours,
   normalizeImageCrop,
   normalizeWeeklyHours,
@@ -473,7 +474,11 @@ function Admin() {
     try {
       const themeDoc = await getDoc(themeSettingsDocRef(currentBranchId))
 
-      const data = themeDoc.exists() ? themeDoc.data() : {}
+      const rawData = themeDoc.exists() ? themeDoc.data() : {}
+      const data =
+        currentBranchId === DEFAULT_BRANCH_ID
+          ? migrateLegacyThemeColors(rawData)
+          : rawData
 
       setHeroBackgroundUrl(
         data.heroBackgroundUrl ?? defaultThemeSettings.heroBackgroundUrl,
